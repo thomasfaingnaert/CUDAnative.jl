@@ -437,7 +437,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Intrinsics",
     "title": "CUDAnative.@cuStaticSharedMem",
     "category": "macro",
-    "text": "@cuStaticSharedMem(typ::Type, dims) -> CuDeviceArray{typ,Shared}\n\nGet an array of type typ and dimensions dims (either an integer length or tuple shape) pointing to a statically-allocated piece of shared memory. The type should be statically inferable and the dimensions should be constant (without requiring constant propagation, see JuliaLang/julia#5560), or an error will be thrown and the generator function will be called dynamically.\n\nMultiple statically-allocated shared memory arrays can be requested by calling this macro multiple times.\n\n\n\n\n\n"
+    "text": "@cuStaticSharedMem(T::Type, dims) -> CuDeviceArray{T,AS.Shared}\n\nGet an array of type T and dimensions dims (either an integer length or tuple shape) pointing to a statically-allocated piece of shared memory. The type should be statically inferable and the dimensions should be constant, or an error will be thrown and the generator function will be called dynamically.\n\n\n\n\n\n"
 },
 
 {
@@ -445,7 +445,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Intrinsics",
     "title": "CUDAnative.@cuDynamicSharedMem",
     "category": "macro",
-    "text": "@cuDynamicSharedMem(typ::Type, dims, offset::Integer=0) -> CuDeviceArray{typ,Shared}\n\nGet an array of type typ and dimensions dims (either an integer length or tuple shape) pointing to a dynamically-allocated piece of shared memory. The type should be statically inferable and the dimension and offset parameters should be constant (without requiring constant propagation, see JuliaLang/julia#5560), or an error will be thrown and the generator function will be called dynamically.\n\nDynamic shared memory also needs to be allocated beforehand, when calling the kernel.\n\nOptionally, an offset parameter indicating how many bytes to add to the base shared memory pointer can be specified. This is useful when dealing with a heterogeneous buffer of dynamic shared memory; in the case of a homogeneous multi-part buffer it is preferred to use view.\n\nNote that calling this macro multiple times does not result in different shared arrays; only a single dynamically-allocated shared memory array exists.\n\n\n\n\n\n"
+    "text": "@cuDynamicSharedMem(T::Type, dims, offset::Integer=0) -> CuDeviceArray{T,AS.Shared}\n\nGet an array of type T and dimensions dims (either an integer length or tuple shape) pointing to a dynamically-allocated piece of shared memory. The type should be statically inferable or an error will be thrown and the generator function will be called dynamically.\n\nNote that the amount of dynamic shared memory needs to specified when launching the kernel.\n\nOptionally, an offset parameter indicating how many bytes to add to the base shared memory pointer can be specified. This is useful when dealing with a heterogeneous buffer of dynamic shared memory; in the case of a homogeneous multi-part buffer it is preferred to use view.\n\n\n\n\n\n"
 },
 
 {
