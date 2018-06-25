@@ -253,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reflection",
     "title": "CUDAnative.code_llvm",
     "category": "function",
-    "text": "code_llvm([io], f, types; optimize=true, dump_module=false, cap::VersionNumber)\n\nPrints the device LLVM IR generated for the method matching the given generic function and type signature to io which defaults to stdout. The IR is optimized according to optimize (defaults to true), and the entire module, including headers and other functions, is dumped if dump_module is set (defaults to false). The device capability cap to generate code for defaults to the current active device\'s capability, or v\"2.0\" if there is no such active context.\n\nSee also: @device_code_llvm, Base.code_llvm\n\n\n\n\n\n"
+    "text": "code_llvm([io], f, types; optimize=true, cap::VersionNumber, kernel=true,\n                          dump_module=false, strip_ir_metadata=true)\n\nPrints the device LLVM IR generated for the method matching the given generic function and type signature to io which defaults to stdout. The IR is optimized according to optimize (defaults to true), which includes entry-point specific optimizations if kernel is set (defaults to false). The device capability cap to generate code for defaults to the current active device\'s capability, or v\"2.0\" if there is no such active context. The entire module, including headers and other functions, is dumped if dump_module is set (defaults to false). Finally, setting strip_ir_metadata removes all debug metadata (defaults to true).\n\nSee also: @device_code_llvm, Base.code_llvm\n\n\n\n\n\n"
 },
 
 {
@@ -261,7 +261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reflection",
     "title": "CUDAnative.code_ptx",
     "category": "function",
-    "text": "code_ptx([io], f, types; cap::VersionNumber, kernel::Bool=false)\n\nPrints the PTX assembly generated for the method matching the given generic function and type signature to io which defaults to stdout. The device capability cap to generate code for defaults to the current active device\'s capability, or v\"2.0\" if there is no such active context. The optional kernel parameter indicates whether the function in question is an entry-point function, or a regular device function.\n\nSee also: @device_code_ptx\n\n\n\n\n\n"
+    "text": "code_ptx([io], f, types; cap::VersionNumber, kernel=false)\n\nPrints the PTX assembly generated for the method matching the given generic function and type signature to io which defaults to stdout. The device capability cap to generate code for defaults to the current active device\'s capability, or v\"2.0\" if there is no such active context. The optional kernel parameter indicates whether the function in question is an entry-point function, or a regular device function.\n\nSee also: @device_code_ptx\n\n\n\n\n\n"
 },
 
 {
