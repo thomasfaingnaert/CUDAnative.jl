@@ -261,7 +261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reflection",
     "title": "CUDAnative.code_ptx",
     "category": "function",
-    "text": "code_ptx([io], f, types; cap::VersionNumber, kernel=false)\n\nPrints the PTX assembly generated for the method matching the given generic function and type signature to io which defaults to stdout. The device capability cap to generate code for defaults to the current active device\'s capability, or v\"2.0\" if there is no such active context. The optional kernel parameter indicates whether the function in question is an entry-point function, or a regular device function.\n\nSee also: @device_code_ptx\n\n\n\n\n\n"
+    "text": "code_ptx([io], f, types; cap::VersionNumber, kernel=false, strip_ir_metadata=true)\n\nPrints the PTX assembly generated for the method matching the given generic function and type signature to io which defaults to stdout. The device capability cap to generate code for defaults to the current active device\'s capability, or v\"2.0\" if there is no such active context. The optional kernel parameter indicates whether the function in question is an entry-point function, or a regular device function. Finally, setting strip_ir_metadata removes all debug metadata (defaults to true).\n\nSee also: @device_code_ptx\n\n\n\n\n\n"
 },
 
 {
