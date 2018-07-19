@@ -253,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reflection",
     "title": "CUDAnative.code_llvm",
     "category": "function",
-    "text": "code_llvm([io], f, types; optimize=true, dump_module=false, cap::VersionNumber)\n\nPrints the device LLVM IR generated for the method matching the given generic function and type signature to io which defaults to stdout. The IR is optimized according to optimize (defaults to true), and the entire module, including headers and other functions, is dumped if dump_module is set (defaults to false). The device capability cap to generate code for defaults to the current active device\'s capability, or v\"2.0\" if there is no such active context.\n\nSee also: @device_code_llvm, Base.code_llvm\n\n\n\n\n\n"
+    "text": "code_llvm([io], f, types; optimize=true, cap::VersionNumber, kernel=true,\n                          dump_module=false, strip_ir_metadata=true)\n\nPrints the device LLVM IR generated for the method matching the given generic function and type signature to io which defaults to stdout. The IR is optimized according to optimize (defaults to true), which includes entry-point specific optimizations if kernel is set (defaults to false). The device capability cap to generate code for defaults to the current active device\'s capability, or v\"2.0\" if there is no such active context. The entire module, including headers and other functions, is dumped if dump_module is set (defaults to false). Finally, setting strip_ir_metadata removes all debug metadata (defaults to true).\n\nSee also: @device_code_llvm, Base.code_llvm\n\n\n\n\n\n"
 },
 
 {
@@ -261,7 +261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reflection",
     "title": "CUDAnative.code_ptx",
     "category": "function",
-    "text": "code_ptx([io], f, types; cap::VersionNumber, kernel::Bool=false)\n\nPrints the PTX assembly generated for the method matching the given generic function and type signature to io which defaults to stdout. The device capability cap to generate code for defaults to the current active device\'s capability, or v\"2.0\" if there is no such active context. The optional kernel parameter indicates whether the function in question is an entry-point function, or a regular device function.\n\nSee also: @device_code_ptx\n\n\n\n\n\n"
+    "text": "code_ptx([io], f, types; cap::VersionNumber, kernel=false, strip_ir_metadata=true)\n\nPrints the PTX assembly generated for the method matching the given generic function and type signature to io which defaults to stdout. The device capability cap to generate code for defaults to the current active device\'s capability, or v\"2.0\" if there is no such active context. The optional kernel parameter indicates whether the function in question is an entry-point function, or a regular device function. Finally, setting strip_ir_metadata removes all debug metadata (defaults to true).\n\nSee also: @device_code_ptx\n\n\n\n\n\n"
 },
 
 {
@@ -437,7 +437,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Intrinsics",
     "title": "CUDAnative.@cuStaticSharedMem",
     "category": "macro",
-    "text": "@cuStaticSharedMem(typ::Type, dims) -> CuDeviceArray{typ,Shared}\n\nGet an array of type typ and dimensions dims (either an integer length or tuple shape) pointing to a statically-allocated piece of shared memory. The type should be statically inferable and the dimensions should be constant (without requiring constant propagation, see JuliaLang/julia#5560), or an error will be thrown and the generator function will be called dynamically.\n\nMultiple statically-allocated shared memory arrays can be requested by calling this macro multiple times.\n\n\n\n\n\n"
+    "text": "@cuStaticSharedMem(T::Type, dims) -> CuDeviceArray{T,AS.Shared}\n\nGet an array of type T and dimensions dims (either an integer length or tuple shape) pointing to a statically-allocated piece of shared memory. The type should be statically inferable and the dimensions should be constant, or an error will be thrown and the generator function will be called dynamically.\n\n\n\n\n\n"
 },
 
 {
@@ -445,7 +445,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Intrinsics",
     "title": "CUDAnative.@cuDynamicSharedMem",
     "category": "macro",
-    "text": "@cuDynamicSharedMem(typ::Type, dims, offset::Integer=0) -> CuDeviceArray{typ,Shared}\n\nGet an array of type typ and dimensions dims (either an integer length or tuple shape) pointing to a dynamically-allocated piece of shared memory. The type should be statically inferable and the dimension and offset parameters should be constant (without requiring constant propagation, see JuliaLang/julia#5560), or an error will be thrown and the generator function will be called dynamically.\n\nDynamic shared memory also needs to be allocated beforehand, when calling the kernel.\n\nOptionally, an offset parameter indicating how many bytes to add to the base shared memory pointer can be specified. This is useful when dealing with a heterogeneous buffer of dynamic shared memory; in the case of a homogeneous multi-part buffer it is preferred to use view.\n\nNote that calling this macro multiple times does not result in different shared arrays; only a single dynamically-allocated shared memory array exists.\n\n\n\n\n\n"
+    "text": "@cuDynamicSharedMem(T::Type, dims, offset::Integer=0) -> CuDeviceArray{T,AS.Shared}\n\nGet an array of type T and dimensions dims (either an integer length or tuple shape) pointing to a dynamically-allocated piece of shared memory. The type should be statically inferable or an error will be thrown and the generator function will be called dynamically.\n\nNote that the amount of dynamic shared memory needs to specified when launching the kernel.\n\nOptionally, an offset parameter indicating how many bytes to add to the base shared memory pointer can be specified. This is useful when dealing with a heterogeneous buffer of dynamic shared memory; in the case of a homogeneous multi-part buffer it is preferred to use view.\n\n\n\n\n\n"
 },
 
 {
