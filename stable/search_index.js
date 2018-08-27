@@ -45,7 +45,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Usage",
     "title": "Quick start",
     "category": "section",
-    "text": "First you have to write the kernel function and make sure it only uses features from the CUDA-supported subset of Julia:using CUDAnative\n\nfunction kernel_vadd(a, b, c)\n    i = (blockIdx().x-1) * blockDim().x + threadIdx().x\n    c[i] = a[i] + b[i]\n\n    return nothing\nend\nUsing the @cuda macro, you can launch the kernel on a GPU of your choice:using CUDAdrv, CUDAnative\nusing Base.Test\n\n# CUDAdrv functionality: generate and upload data\na = round.(rand(Float32, (3, 4)) * 100)\nb = round.(rand(Float32, (3, 4)) * 100)\nd_a = CuArray(a)\nd_b = CuArray(b)\nd_c = similar(d_a)  # output array\n\n# run the kernel and fetch results\n# syntax: @cuda [kwargs...] kernel(args...)\n@cuda threads=12 kernel_vadd(d_a, d_b, d_c)\n\n# CUDAdrv functionality: download data\n# this synchronizes the device\nc = Array(d_c)\n\n@test a+b ≈ cThis code is executed in a default, global context for the first device in your system. Similar to cudaSetDevice, you can switch devices by calling CUDAnative\'s device! function:# change the active device\ndevice!(1)\n\n# the same, but only temporarily\ndevice!(2) do\n    # ...\nendTo enable debug logging, launch Julia with the JULIA_DEBUG environment variable set to CUDAnative."
+    "text": "First you have to write the kernel function and make sure it only uses features from the CUDA-supported subset of Julia:using CUDAnative\n\nfunction kernel_vadd(a, b, c)\n    i = (blockIdx().x-1) * blockDim().x + threadIdx().x\n    c[i] = a[i] + b[i]\nend\nUsing the @cuda macro, you can launch the kernel on a GPU of your choice:using CUDAdrv, CUDAnative\nusing Test\n\n# CUDAdrv functionality: generate and upload data\na = round.(rand(Float32, (3, 4)) * 100)\nb = round.(rand(Float32, (3, 4)) * 100)\nd_a = CuArray(a)\nd_b = CuArray(b)\nd_c = similar(d_a)  # output array\n\n# run the kernel and fetch results\n# syntax: @cuda [kwargs...] kernel(args...)\n@cuda threads=12 kernel_vadd(d_a, d_b, d_c)\n\n# CUDAdrv functionality: download data\n# this synchronizes the device\nc = Array(d_c)\n\n@test a+b ≈ cThis code is executed in a default, global context for the first device in your system. Similar to cudaSetDevice, you can switch devices by calling CUDAnative\'s device! function:# change the active device\ndevice!(1)\n\n# the same, but only temporarily\ndevice!(2) do\n    # ...\nendTo enable debug logging, launch Julia with the JULIA_DEBUG environment variable set to CUDAnative."
 },
 
 {
@@ -253,7 +253,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reflection",
     "title": "CUDAnative.code_llvm",
     "category": "function",
-    "text": "code_llvm([io], f, types; optimize=true, cap::VersionNumber, kernel=true,\n                          dump_module=false, strip_ir_metadata=true)\n\nPrints the device LLVM IR generated for the method matching the given generic function and type signature to io which defaults to stdout. The IR is optimized according to optimize (defaults to true), which includes entry-point specific optimizations if kernel is set (defaults to false). The device capability cap to generate code for defaults to the current active device\'s capability, or v\"2.0\" if there is no such active context. The entire module, including headers and other functions, is dumped if dump_module is set (defaults to false). Finally, setting strip_ir_metadata removes all debug metadata (defaults to true).\n\nSee also: @device_code_llvm, Base.code_llvm\n\n\n\n\n\n"
+    "text": "code_llvm([io], f, types; optimize=true, cap::VersionNumber, kernel=true,\n                          dump_module=false, strip_ir_metadata=true)\n\nPrints the device LLVM IR generated for the method matching the given generic function and type signature to io which defaults to stdout. The IR is optimized according to optimize (defaults to true), which includes entry-point specific optimizations if kernel is set (defaults to false). The device capability cap to generate code for defaults to the current active device\'s capability, or v\"2.0\" if there is no such active context. The entire module, including headers and other functions, is dumped if dump_module is set (defaults to false). Finally, setting strip_ir_metadata removes all debug metadata (defaults to true).\n\nSee also: @device_code_llvm, InteractiveUtils.code_llvm\n\n\n\n\n\n"
 },
 
 {
@@ -285,7 +285,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reflection",
     "title": "CUDAnative.@device_code_lowered",
     "category": "macro",
-    "text": "@device_code_lowered ex\n\nEvaluates the expression ex and returns the result of Base.code_lowered for every compiled CUDA kernel.\n\nSee also: Base.@code_lowered\n\n\n\n\n\n"
+    "text": "@device_code_lowered ex\n\nEvaluates the expression ex and returns the result of InteractiveUtils.code_lowered for every compiled CUDA kernel.\n\nSee also: InteractiveUtils.@code_lowered\n\n\n\n\n\n"
 },
 
 {
@@ -293,7 +293,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reflection",
     "title": "CUDAnative.@device_code_typed",
     "category": "macro",
-    "text": "@device_code_typed ex\n\nEvaluates the expression ex and returns the result of Base.code_typed for every compiled CUDA kernel.\n\nSee also: Base.@code_typed\n\n\n\n\n\n"
+    "text": "@device_code_typed ex\n\nEvaluates the expression ex and returns the result of InteractiveUtils.code_typed for every compiled CUDA kernel.\n\nSee also: InteractiveUtils.@code_typed\n\n\n\n\n\n"
 },
 
 {
@@ -301,7 +301,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reflection",
     "title": "CUDAnative.@device_code_warntype",
     "category": "macro",
-    "text": "@device_code_warntype [io::IO=stdout] ex\n\nEvaluates the expression ex and prints the result of Base.code_warntype to io for every compiled CUDA kernel.\n\nSee also: Base.@code_warntype\n\n\n\n\n\n"
+    "text": "@device_code_warntype [io::IO=stdout] ex\n\nEvaluates the expression ex and prints the result of InteractiveUtils.code_warntype to io for every compiled CUDA kernel.\n\nSee also: InteractiveUtils.@code_warntype\n\n\n\n\n\n"
 },
 
 {
@@ -309,7 +309,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reflection",
     "title": "CUDAnative.@device_code_llvm",
     "category": "macro",
-    "text": "@device_code_llvm [io::IO=stdout, ...] ex\n\nEvaluates the expression ex and prints the result of Base.code_llvm to io for every compiled CUDA kernel. For other supported keywords, see CUDAnative.code_llvm.\n\nSee also: Base.@code_llvm\n\n\n\n\n\n"
+    "text": "@device_code_llvm [io::IO=stdout, ...] ex\n\nEvaluates the expression ex and prints the result of InteractiveUtils.code_llvm to io for every compiled CUDA kernel. For other supported keywords, see CUDAnative.code_llvm.\n\nSee also: InteractiveUtils.@code_llvm\n\n\n\n\n\n"
 },
 
 {
