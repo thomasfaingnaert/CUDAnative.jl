@@ -213,7 +213,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Compilation & Execution",
     "title": "CUDAnative.@cuda",
     "category": "macro",
-    "text": "@cuda [kwargs...] func(args...)\n\nHigh-level interface for calling functions on a GPU, queues a kernel launch on the current context. The @cuda macro should prefix a kernel invocation, with one of the following arguments in the kwargs position:\n\nAffecting the kernel launch:\n\nthreads (defaults to 1)\nblocks (defaults to 1)\nshmem (defaults to 0)\nstream (defaults to the default stream)\n\nAffecting the kernel compilation:\n\nminthreads: the required number of threads in a thread block.\nmaxthreads: the maximum number of threads in a thread block.\nblockspersm: a minimum number of thread blocks to be scheduled on a single multiprocessor.\nmaxregs: the maximum number of registers to be allocated to a single thread (only supported on LLVM 4.0+)\n\nNote that, contrary to with CUDA C, you can invoke the same kernel multiple times with different compilation parameters. New code will be generated automatically.\n\nThe func argument should be a valid Julia function. Its return values will be ignored, by means of a wrapper. The function will be compiled to a CUDA function upon first use, and to a certain extent arguments will be converted and managed automatically (see cudaconvert). Finally, a call to cudacall is performed, scheduling the compiled function for execution on the GPU.\n\n\n\n\n\n"
+    "text": "@cuda [kwargs...] func(args...)\n\nHigh-level interface for executing code on a GPU. The @cuda macro should prefix a call, with func a callable function or object that should return nothing. It will be compiled to a CUDA function upon first use, and to a certain extent arguments will be converted and managed automatically (see cudaconvert). Finally, a call to CUDAdrv.cudacall is performed, scheduling a kernel launch on the current CUDA context.\n\nSeveral keyword arguments are supported that influence kernel compilation and execution. For more information, refer to the documentation of respectively cufunction and CUDAnative.Kernel\n\nThe underlying operations (argument conversion, kernel compilation, kernel call) can be performed explicitly when more control is needed, e.g. to reflect on the resource usage of a kernel to determine the launch configuration:\n\nargs = ...\nGC.@preserve args begin\n    kernel_args = cudaconvert.(args)\n    kernel_tt = Tuple{Core.Typeof.(kernel_args)...}\n    kernel = CUDAnative.cufunction(f, kernel_tt; compilation_kwargs)\n    kernel(kernel_args...; launch_kwargs)\nend\n\n\n\n\n\n"
 },
 
 {
@@ -221,7 +221,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Compilation & Execution",
     "title": "CUDAnative.cudaconvert",
     "category": "function",
-    "text": "cudaconvert(x)\n\nThis function is called for every argument to be passed to a kernel, allowing it to be converted to a GPU-friendly format. By default, the function does nothing and returns the input object x as-is.\n\nFor CuArray objects, a corresponding CuDeviceArray object in global space is returned, which implements GPU-compatible array functionality.\n\n\n\n\n\n"
+    "text": "cudaconvert(x)\n\nLow-level interface to convert values to a representation that is GPU compatible. For a higher-level interface, use @cuda.\n\nBy default, CUDAnative does only provide a minimal set of conversions for elementary types such as tuples. If you need your type to convert before execution on a GPU, be sure to add methods to this function.\n\nFor the time being, conversions for CUDAdrv.CuArray objects are also provided, returning a corresponding CuDeviceArray object in global memory. This will be deprecated in favor of functionality from the CuArrays.jl package.\n\n\n\n\n\n"
 },
 
 {
@@ -229,7 +229,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Compilation & Execution",
     "title": "CUDAnative.nearest_warpsize",
     "category": "function",
-    "text": "Return the nearest number of threads that is a multiple of the warp size of a device:\n\nnearest_warpsize(dev::CuDevice, threads::Integer)\n\nThis is a common requirement, eg. when using shuffle intrinsics.\n\n\n\n\n\n"
+    "text": "nearest_warpsize(dev::CuDevice, threads::Integer)\n\nReturn the nearest number of threads that is a multiple of the warp size of a device.\n\nThis is a common requirement, eg. when using shuffle intrinsics.\n\n\n\n\n\n"
 },
 
 {
