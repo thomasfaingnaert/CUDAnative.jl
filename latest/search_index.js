@@ -209,30 +209,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "lib/compilation.html#CUDAnative.@cuda",
-    "page": "Compilation & Execution",
-    "title": "CUDAnative.@cuda",
-    "category": "macro",
-    "text": "@cuda [kwargs...] func(args...)\n\nHigh-level interface for executing code on a GPU. The @cuda macro should prefix a call, with func a callable function or object that should return nothing. It will be compiled to a CUDA function upon first use, and to a certain extent arguments will be converted and managed automatically (see cudaconvert). Finally, a call to CUDAdrv.cudacall is performed, scheduling a kernel launch on the current CUDA context.\n\nSeveral keyword arguments are supported that influence kernel compilation and execution. For more information, refer to the documentation of respectively cufunction and CUDAnative.Kernel\n\nThe underlying operations (argument conversion, kernel compilation, kernel call) can be performed explicitly when more control is needed, e.g. to reflect on the resource usage of a kernel to determine the launch configuration:\n\nargs = ...\nGC.@preserve args begin\n    kernel_args = cudaconvert.(args)\n    kernel_tt = Tuple{Core.Typeof.(kernel_args)...}\n    kernel = CUDAnative.cufunction(f, kernel_tt; compilation_kwargs)\n    kernel(kernel_args...; launch_kwargs)\nend\n\n\n\n\n\n"
-},
-
-{
-    "location": "lib/compilation.html#CUDAnative.cudaconvert",
-    "page": "Compilation & Execution",
-    "title": "CUDAnative.cudaconvert",
-    "category": "function",
-    "text": "cudaconvert(x)\n\nLow-level interface to convert values to a representation that is GPU compatible. For a higher-level interface, use @cuda.\n\nBy default, CUDAnative does only provide a minimal set of conversions for elementary types such as tuples. If you need your type to convert before execution on a GPU, be sure to add methods to this function.\n\nFor the time being, conversions for CUDAdrv.CuArray objects are also provided, returning a corresponding CuDeviceArray object in global memory. This will be deprecated in favor of functionality from the CuArrays.jl package.\n\n\n\n\n\n"
-},
-
-{
-    "location": "lib/compilation.html#CUDAnative.nearest_warpsize",
-    "page": "Compilation & Execution",
-    "title": "CUDAnative.nearest_warpsize",
-    "category": "function",
-    "text": "nearest_warpsize(dev::CuDevice, threads::Integer)\n\nReturn the nearest number of threads that is a multiple of the warp size of a device.\n\nThis is a common requirement, eg. when using shuffle intrinsics.\n\n\n\n\n\n"
-},
-
-{
     "location": "lib/compilation.html#Compilation-and-Execution-1",
     "page": "Compilation & Execution",
     "title": "Compilation & Execution",
