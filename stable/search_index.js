@@ -21,7 +21,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Installation",
     "category": "section",
-    "text": "Requirements:Julia 0.7\nCUDA toolkit\nNVIDIA driverPkg.add(\"CUDAnative\")\nusing CUDAnative\n\n# optionally\nPkg.test(\"CUDAnative\")The build step will discover the available CUDA and LLVM installations, and figure out which devices can be programmed using that set-up. It depends on CUDAdrv and LLVM being properly configured.Even if the build fails, CUDAnative.jl should always be loadable. This simplifies use by downstream packages, until there is proper language support for conditional modules. You can check whether the package has been built properly by inspecting the CUDAnative.configured global variable."
+    "text": "Requirements:Julia 1.0\nCUDA toolkit\nNVIDIA driverPkg.add(\"CUDAnative\")\nusing CUDAnative\n\n# optionally\nPkg.test(\"CUDAnative\")The build step will discover the available CUDA and LLVM installations, and figure out which devices can be programmed using that set-up. It depends on CUDAdrv and LLVM being properly configured.Even if the build fails, CUDAnative.jl should always be loadable. This simplifies use by downstream packages, until there is proper language support for conditional modules. You can check whether the package has been built properly by inspecting the CUDAnative.configured global variable."
 },
 
 {
@@ -45,7 +45,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Usage",
     "title": "Quick start",
     "category": "section",
-    "text": "First you have to write the kernel function and make sure it only uses features from the CUDA-supported subset of Julia:using CUDAnative\n\nfunction kernel_vadd(a, b, c)\n    i = (blockIdx().x-1) * blockDim().x + threadIdx().x\n    c[i] = a[i] + b[i]\nend\nUsing the @cuda macro, you can launch the kernel on a GPU of your choice:using CUDAdrv, CUDAnative\nusing Test\n\n# CUDAdrv functionality: generate and upload data\na = round.(rand(Float32, (3, 4)) * 100)\nb = round.(rand(Float32, (3, 4)) * 100)\nd_a = CuArray(a)\nd_b = CuArray(b)\nd_c = similar(d_a)  # output array\n\n# run the kernel and fetch results\n# syntax: @cuda [kwargs...] kernel(args...)\n@cuda threads=12 kernel_vadd(d_a, d_b, d_c)\n\n# CUDAdrv functionality: download data\n# this synchronizes the device\nc = Array(d_c)\n\n@test a+b ≈ cThis code is executed in a default, global context for the first device in your system. Similar to cudaSetDevice, you can switch devices by calling CUDAnative\'s device! function:# change the active device\ndevice!(1)\n\n# the same, but only temporarily\ndevice!(2) do\n    # ...\nendTo enable debug logging, launch Julia with the JULIA_DEBUG environment variable set to CUDAnative."
+    "text": "First you have to write the kernel function and make sure it only uses features from the CUDA-supported subset of Julia:using CUDAnative\n\nfunction kernel_vadd(a, b, c)\n    i = (blockIdx().x-1) * blockDim().x + threadIdx().x\n    c[i] = a[i] + b[i]\n    return nothing\nend\nUsing the @cuda macro, you can launch the kernel on a GPU of your choice:using CUDAdrv, CUDAnative\nusing Test\n\n# CUDAdrv functionality: generate and upload data\na = round.(rand(Float32, (3, 4)) * 100)\nb = round.(rand(Float32, (3, 4)) * 100)\nd_a = CuArray(a)\nd_b = CuArray(b)\nd_c = similar(d_a)  # output array\n\n# run the kernel and fetch results\n# syntax: @cuda [kwargs...] kernel(args...)\n@cuda threads=12 kernel_vadd(d_a, d_b, d_c)\n\n# CUDAdrv functionality: download data\n# this synchronizes the device\nc = Array(d_c)\n\n@test a+b ≈ cThis code is executed in a default, global context for the first device in your system. Similar to cudaSetDevice, you can switch devices by calling CUDAnative\'s device! function:# change the active device\ndevice!(1)\n\n# the same, but only temporarily\ndevice!(2) do\n    # ...\nendTo enable debug logging, launch Julia with the JULIA_DEBUG environment variable set to CUDAnative."
 },
 
 {
@@ -206,30 +206,6 @@ var documenterSearchIndex = {"docs": [
     "title": "Compilation & Execution",
     "category": "page",
     "text": ""
-},
-
-{
-    "location": "lib/compilation.html#CUDAnative.@cuda",
-    "page": "Compilation & Execution",
-    "title": "CUDAnative.@cuda",
-    "category": "macro",
-    "text": "@cuda [kwargs...] func(args...)\n\nHigh-level interface for calling functions on a GPU, queues a kernel launch on the current context. The @cuda macro should prefix a kernel invocation, with one of the following arguments in the kwargs position:\n\nAffecting the kernel launch:\n\nthreads (defaults to 1)\nblocks (defaults to 1)\nshmem (defaults to 0)\nstream (defaults to the default stream)\n\nAffecting the kernel compilation:\n\nminthreads: the required number of threads in a thread block.\nmaxthreads: the maximum number of threads in a thread block.\nblockspersm: a minimum number of thread blocks to be scheduled on a single multiprocessor.\nmaxregs: the maximum number of registers to be allocated to a single thread (only supported on LLVM 4.0+)\nalias: an identifier that will be used for naming the kernel in generated code (useful for profiling, debugging, ...)\n\nNote that, contrary to with CUDA C, you can invoke the same kernel multiple times with different compilation parameters. New code will be generated automatically.\n\nThe func argument should be a valid Julia function. Its return values will be ignored, by means of a wrapper. The function will be compiled to a CUDA function upon first use, and to a certain extent arguments will be converted and managed automatically (see cudaconvert). Finally, a call to cudacall is performed, scheduling the compiled function for execution on the GPU.\n\n\n\n\n\n"
-},
-
-{
-    "location": "lib/compilation.html#CUDAnative.cudaconvert",
-    "page": "Compilation & Execution",
-    "title": "CUDAnative.cudaconvert",
-    "category": "function",
-    "text": "cudaconvert(x)\n\nThis function is called for every argument to be passed to a kernel, allowing it to be converted to a GPU-friendly format. By default, the function does nothing and returns the input object x as-is.\n\nFor CuArray objects, a corresponding CuDeviceArray object in global space is returned, which implements GPU-compatible array functionality.\n\n\n\n\n\n"
-},
-
-{
-    "location": "lib/compilation.html#CUDAnative.nearest_warpsize",
-    "page": "Compilation & Execution",
-    "title": "CUDAnative.nearest_warpsize",
-    "category": "function",
-    "text": "Return the nearest number of threads that is a multiple of the warp size of a device:\n\nnearest_warpsize(dev::CuDevice, threads::Integer)\n\nThis is a common requirement, eg. when using shuffle intrinsics.\n\n\n\n\n\n"
 },
 
 {
