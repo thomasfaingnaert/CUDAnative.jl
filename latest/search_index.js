@@ -45,7 +45,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Usage",
     "title": "Quick start",
     "category": "section",
-    "text": "First you have to write the kernel function and make sure it only uses features from the CUDA-supported subset of Julia:using CUDAnative\n\nfunction kernel_vadd(a, b, c)\n    i = (blockIdx().x-1) * blockDim().x + threadIdx().x\n    c[i] = a[i] + b[i]\n    return nothing\nend\nUsing the @cuda macro, you can launch the kernel on a GPU of your choice:using CUDAdrv, CUDAnative\nusing Test\n\n# CUDAdrv functionality: generate and upload data\na = round.(rand(Float32, (3, 4)) * 100)\nb = round.(rand(Float32, (3, 4)) * 100)\nd_a = CuArray(a)\nd_b = CuArray(b)\nd_c = similar(d_a)  # output array\n\n# run the kernel and fetch results\n# syntax: @cuda [kwargs...] kernel(args...)\n@cuda threads=12 kernel_vadd(d_a, d_b, d_c)\n\n# CUDAdrv functionality: download data\n# this synchronizes the device\nc = Array(d_c)\n\n@test a+b ≈ cThis code is executed in a default, global context for the first device in your system. Similar to cudaSetDevice, you can switch devices by calling CUDAnative\'s device! function:# change the active device\ndevice!(1)\n\n# the same, but only temporarily\ndevice!(2) do\n    # ...\nendTo enable debug logging, launch Julia with the JULIA_DEBUG environment variable set to CUDAnative."
+    "text": "First you have to write the kernel function and make sure it only uses features from the CUDA-supported subset of Julia:using CUDAnative\n\nfunction kernel_vadd(a, b, c)\n    i = (blockIdx().x-1) * blockDim().x + threadIdx().x\n    c[i] = a[i] + b[i]\n    return nothing\nendUsing the @cuda macro, you can launch the kernel on a GPU of your choice:using CUDAdrv, CUDAnative, CuArrays\nusing Test\n\n# CUDAdrv functionality: generate and upload data\na = round.(rand(Float32, (3, 4)) * 100)\nb = round.(rand(Float32, (3, 4)) * 100)\nd_a = CuArray(a)\nd_b = CuArray(b)\nd_c = similar(d_a)  # output array\n\n# run the kernel and fetch results\n# syntax: @cuda [kwargs...] kernel(args...)\n@cuda threads=12 kernel_vadd(d_a, d_b, d_c)\n\n# CUDAdrv functionality: download data\n# this synchronizes the device\nc = Array(d_c)\n\n@test a+b ≈ cThis code is executed in a default, global context for the first device in your system. Similar to cudaSetDevice, you can switch devices by calling CUDAnative\'s device! function:# change the active device\ndevice!(1)\n\n# the same, but only temporarily\ndevice!(2) do\n    # ...\nendTo enable debug logging, launch Julia with the JULIA_DEBUG environment variable set to CUDAnative."
 },
 
 {
@@ -605,7 +605,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Arrays",
     "title": "Arrays",
     "category": "section",
-    "text": "CUDAnative provides a primitive, lightweight array type to manage GPU data organized in an plain, dense fashion. This is the device-counterpart to CUDAdrv\'s CuArray, and implements (part of) the array interface as well as other functionality for use on the GPU:CUDAnative.CuDeviceArray\nCUDAnative.ldg"
+    "text": "CUDAnative provides a primitive, lightweight array type to manage GPU data organized in an plain, dense fashion. This is the device-counterpart to the CuArray from CuArrays.jl, and implements (part of) the array interface as well as other functionality for use on the GPU:CUDAnative.CuDeviceArray\nCUDAnative.ldg"
 },
 
 {
