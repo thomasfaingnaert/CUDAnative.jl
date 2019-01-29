@@ -126,6 +126,7 @@ include(joinpath("device", "llvm.jl"))
 include(joinpath("device", "runtime.jl"))
 
 include("compiler.jl")
+include("context.jl")
 include("execution.jl")
 include("reflection.jl")
 
