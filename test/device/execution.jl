@@ -469,7 +469,7 @@ end
     val_dev = CuTestArray(val)
     cuda_ptr = convert(CuPtr{Int}, val_dev.buf)
     ptr = CUDAnative.DevicePtr{Int}(cuda_ptr)
-    for i in (1, 10, 20, 35)
+    for i in (1, 10, 20, 34)
         variables = ('a':'z'..., 'A':'Z'...)
         params = [Symbol(variables[j]) for j in 1:i]
         # generate a kernel
@@ -561,11 +561,11 @@ let (code, out, err) = julia_script(script, `-g2`)
           occursin("ERROR: CUDA error: unspecified launch failure", err)
     @test occursin("ERROR: a exception was thrown during kernel execution", out)
     if VERSION < v"1.3.0-DEV.270"
-        @test occursin("[1] Type at float.jl", out)
+        @test occursin(r"\[.\] Type at float.jl", out)
     else
-        @test occursin("[1] Int64 at float.jl", out)
+        @test occursin(r"\[.\] Int64 at float.jl", out)
     end
-    @test occursin("[2] kernel at none:2", out)
+    @test occursin(r"\[.\] kernel at none:2", out)
 end
 
 end
