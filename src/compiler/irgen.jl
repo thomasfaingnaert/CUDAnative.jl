@@ -35,30 +35,15 @@ Base.showerror(io::IO, err::MethodSubstitutionWarning) =
     print(io, "You called $(err.original), maybe you intended to call $(err.substitute) instead?")
 
 function compile_method_instance(job::CompilerJob, method_instance::Core.MethodInstance, world)
-    # set-up the compiler interface
-    function hook_module_setup(ref::Ptr{Cvoid})
-        ref = convert(LLVM.API.LLVMModuleRef, ref)
-        module_setup(LLVM.Module(ref))
-    end
-    dependencies = Vector{LLVM.Module}()
-    function hook_module_activation(ref::Ptr{Cvoid})
-        ref = convert(LLVM.API.LLVMModuleRef, ref)
-        push!(dependencies, LLVM.Module(ref))
-    end
+    # compiler hooks for detecting incompatible function calls
     method_stack = Vector{Core.MethodInstance}()
-    function hook_emit_function(method_instance, code, world)
+    function hook_emit_function(method_instance, code)
         skip_verifier = false
         if length(method_stack) >= 1
             last_method = last(method_stack)
             skip_verifier = last_method.def.name === :overdub
         end
         push!(method_stack, method_instance)
-
-        # check for recursion
-        if method_instance in method_stack[1:end-1]
-            throw(KernelError(job, "recursion is currently not supported";
-                              bt=backtrace(job, method_stack)))
-        end
 
         # if last method on stack is overdub skip the Base check
         # and trust in Cassette
@@ -79,43 +64,67 @@ function compile_method_instance(job::CompilerJob, method_instance::Core.MethodI
             end
         end
     end
-    function hook_emitted_function(method, code, world)
+    function hook_emitted_function(method, code)
         @compiler_assert last(method_stack) == method job
         pop!(method_stack)
     end
-    params = Base.CodegenParams(cached             = false,
-                                track_allocations  = false,
+
+    params = Base.CodegenParams(track_allocations  = false,
                                 code_coverage      = false,
                                 static_alloc       = false,
                                 prefer_specsig     = true,
-                                module_setup       = hook_module_setup,
-                                module_activation  = hook_module_activation,
                                 emit_function      = hook_emit_function,
                                 emitted_function   = hook_emitted_function)
 
-    # get the code
-    ref = ccall(:jl_get_llvmf_defn, LLVM.API.LLVMValueRef,
-                (Any, UInt, Bool, Bool, Base.CodegenParams),
-                method_instance, world, #=wrapper=#false, #=optimize=#false, params)
-    if ref == C_NULL
-        throw(InternalCompilerError(job, "the Julia compiler could not generate LLVM IR"))
-    end
-    llvmf = LLVM.Function(ref)
+    # generate IR
+    native_code = ccall(:jl_create_native, Ptr{Cvoid},
+                        (Vector{Core.MethodInstance}, Base.CodegenParams),
+                        [method_instance], params)
+    @assert native_code != C_NULL
+    llvm_mod_ref = ccall(:jl_get_llvm_module, LLVM.API.LLVMModuleRef,
+                         (Ptr{Cvoid},), native_code)
+    @assert llvm_mod_ref != C_NULL
+    llvm_mod = LLVM.Module(llvm_mod_ref)
 
-    modules = [LLVM.parent(llvmf), dependencies...]
-    return llvmf, modules
+    # get the top-level code
+    code = Core.Compiler.inf_for_methodinstance(method_instance, world, world)
+
+    # get the top-level function index
+    llvm_func_idx = Ref{Int32}(-1)
+    llvm_specfunc_idx = Ref{Int32}(-1)
+    ccall(:jl_breakpoint, Nothing, ())
+    ccall(:jl_get_function_id, Nothing,
+          (Ptr{Cvoid}, Any, Ptr{Int32}, Ptr{Int32}),
+          native_code, code, llvm_func_idx, llvm_specfunc_idx)
+    @assert llvm_func_idx[] != -1
+    @assert llvm_specfunc_idx[] != -1
+
+    # get the top-level function)
+    llvm_func_ref = ccall(:jl_get_llvm_function, LLVM.API.LLVMValueRef,
+                     (Ptr{Cvoid}, UInt32), native_code, llvm_func_idx[]-1)
+    @assert llvm_func_ref != C_NULL
+    llvm_func = LLVM.Function(llvm_func_ref)
+    llvm_specfunc_ref = ccall(:jl_get_llvm_function, LLVM.API.LLVMValueRef,
+                         (Ptr{Cvoid}, UInt32), native_code, llvm_specfunc_idx[]-1)
+    @assert llvm_specfunc_ref != C_NULL
+    llvm_specfunc = LLVM.Function(llvm_specfunc_ref)
+
+    # configure the module
+    # NOTE: NVPTX::TargetMachine's data layout doesn't match the NVPTX user guide,
+    #       so we specify it ourselves
+    if Int === Int64
+        triple!(llvm_mod, "nvptx64-nvidia-cuda")
+        datalayout!(llvm_mod, "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v16:16:16-v32:32:32-v64:64:64-v128:128:128-n16:32:64")
+    else
+        triple!(llvm_mod, "nvptx-nvidia-cuda")
+        datalayout!(llvm_mod, "e-p:32:32:32-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v16:16:16-v32:32:32-v64:64:64-v128:128:128-n16:32:64")
+    end
+
+    return llvm_specfunc, llvm_mod
 end
 
 function irgen(job::CompilerJob, method_instance::Core.MethodInstance, world)
-    entry, modules = @timeit to[] "emission" compile_method_instance(job, method_instance, world)
-
-    # link in dependent modules
-    @timeit to[] "linking" begin
-        mod = popfirst!(modules)
-        for dep in modules
-            link!(mod, dep)
-        end
-    end
+    entry, mod = @timeit to[] "emission" compile_method_instance(job, method_instance, world)
 
     # clean up incompatibilities
     @timeit to[] "clean-up" for llvmf in functions(mod)
