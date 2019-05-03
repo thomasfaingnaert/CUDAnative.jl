@@ -51,7 +51,7 @@ end
 
 function codegen(target::Symbol, job::CompilerJob;
                  libraries::Bool=true, dynamic_parallelism::Bool=true, optimize::Bool=true,
-                 strip::Bool=false,strict::Bool=true)
+                 strip::Bool=false, strict::Bool=true)
     ## Julia IR
 
     @timeit to[] "validation" check_method(job)
@@ -104,6 +104,10 @@ function codegen(target::Symbol, job::CompilerJob;
                 libdevice = load_libdevice(job.cap)
                 @timeit to[] "device library" link_libdevice!(job, ir, libdevice)
             end
+        end
+
+        if job.kernel
+            kernel = promote_kernel!(job, ir, kernel)
         end
 
         if optimize

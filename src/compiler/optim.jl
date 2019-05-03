@@ -3,10 +3,6 @@
 function optimize!(job::CompilerJob, mod::LLVM.Module, entry::LLVM.Function)
     tm = machine(job.cap, triple(mod))
 
-    if job.kernel
-        entry = promote_kernel!(job, mod, entry)
-    end
-
     function initialize!(pm)
         add_library_info!(pm, triple(mod))
         add_transform_info!(pm, tm)
@@ -35,16 +31,16 @@ function optimize!(job::CompilerJob, mod::LLVM.Module, entry::LLVM.Function)
         ModulePassManager() do pm
             initialize!(pm)
             ccall(:jl_add_optimization_passes, Cvoid,
-                  (LLVM.API.LLVMPassManagerRef, Cint),
-                  LLVM.ref(pm), Base.JLOptions().opt_level)
+                    (LLVM.API.LLVMPassManagerRef, Cint),
+                    LLVM.ref(pm), Base.JLOptions().opt_level)
             run!(pm, mod)
         end
     else
         ModulePassManager() do pm
             initialize!(pm)
             ccall(:jl_add_optimization_passes, Cvoid,
-                  (LLVM.API.LLVMPassManagerRef, Cint, Cint),
-                  LLVM.ref(pm), Base.JLOptions().opt_level, #=lower_intrinsics=# 0)
+                    (LLVM.API.LLVMPassManagerRef, Cint, Cint),
+                    LLVM.ref(pm), Base.JLOptions().opt_level, #=lower_intrinsics=# 0)
             run!(pm, mod)
         end
 
@@ -116,10 +112,8 @@ function optimize!(job::CompilerJob, mod::LLVM.Module, entry::LLVM.Function)
 
         run!(pm, mod)
     end
-
     return entry
 end
-
 
 ## kernel-specific optimizations
 
