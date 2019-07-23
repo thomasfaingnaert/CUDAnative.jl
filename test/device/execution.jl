@@ -308,7 +308,7 @@ end
         return
     end
 
-    @cuda interactive=true kernel(convert(CuPtr{Int}, arr.buf))
+    @cuda kernel(convert(CuPtr{Int}, arr.buf))
     @test Array(arr)[] == 1
 
     function kernel(ptr)
@@ -316,7 +316,7 @@ end
         return
     end
 
-    @cuda interactive=true kernel(convert(CuPtr{Int}, arr.buf))
+    @cuda kernel(convert(CuPtr{Int}, arr.buf))
     @test Array(arr)[] == 2
 end
 
