@@ -10,4 +10,4 @@ wmma_store_d(dst_addr) =
     call void @llvm.nvvm.wmma.store.d.sync.row.m16n16k16.stride.f32(i8* %dst_ptr, float 42.0e+0, float 42.0e+0, float 42.0e+0, float 42.0e+0, float 42.0e+0, float 42.0e+0, float 42.0e+0, float 42.0e+0, i32 16)
     ret void
     """),
-    Nothing, Tuple{Int64}, dst_addr)
+    Nothing, Tuple{Int64}, convert(Int64, dst_addr))

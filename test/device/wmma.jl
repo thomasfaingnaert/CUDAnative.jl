@@ -6,7 +6,7 @@
 
         @testset "wmma_store_d" begin
             buf     = Mem.alloc(Mem.Device, 16 * 16 * sizeof(Float32))
-            buf_ptr = convert(Int64, convert(CUDAdrv.CuPtr{Float32}, buf))
+            buf_ptr = convert(CUDAdrv.CuPtr{Float32}, buf)
 
             function kernel(buf_ptr)
                 CUDAnative.wmma_store_d(buf_ptr)
