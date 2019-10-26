@@ -11,6 +11,7 @@ include(joinpath("cuda", "assertion.jl"))
 include(joinpath("cuda", "memory_dynamic.jl"))
 include(joinpath("cuda", "atomics.jl"))
 include(joinpath("cuda", "misc.jl"))
+include(joinpath("cuda", "wmma.jl"))
 
 # functionality from libdevice
 #
