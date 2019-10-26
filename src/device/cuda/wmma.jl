@@ -34,12 +34,8 @@ struct wmma_fragment
     data7::NTuple{2, VecElement{Float16}}
 end
 
-function wmma_load_a(src_addr, stride)
-    #= ret = wmma_fragment((0, 0), (0, 0), (0, 0), (0, 0)) =#
-
-    #= return ret =#
-
-    return Base.llvmcall((
+wmma_load_a(src_addr, stride) =
+    Base.llvmcall((
     """
     declare { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } @llvm.nvvm.wmma.load.a.sync.row.m16n16k16.stride.f16(i8*, i32)
     """,
@@ -81,4 +77,3 @@ function wmma_load_a(src_addr, stride)
     Tuple{Int64 ,Int32},
     convert(Int64, src_addr),
     convert(Int32, stride))
-end
