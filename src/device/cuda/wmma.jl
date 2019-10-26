@@ -121,3 +121,59 @@ wmma_load_b(src_addr, stride) =
     Tuple{Int64 ,Int32},
     convert(Int64, src_addr),
     convert(Int32, stride))
+
+struct mma_ret
+    data0::Float32
+    data1::Float32
+    data2::Float32
+    data3::Float32
+    data4::Float32
+    data5::Float32
+    data6::Float32
+    data7::Float32
+end
+
+wmma_mma(a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7, b_0, b_1, b_2, b_3, b_4, b_5, b_6, b_7) =
+    Base.llvmcall((
+    """
+    declare { float, float, float, float, float, float, float, float } @llvm.nvvm.wmma.mma.sync.row.row.m16n16k16.f32.f32(<2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, float, float, float, float, float, float, float, float)
+    """,
+    """
+    %conv_0 = bitcast <2 x i16> %0 to <2 x half>
+    %conv_1 = bitcast <2 x i16> %1 to <2 x half>
+    %conv_2 = bitcast <2 x i16> %2 to <2 x half>
+    %conv_3 = bitcast <2 x i16> %3 to <2 x half>
+    %conv_4 = bitcast <2 x i16> %4 to <2 x half>
+    %conv_5 = bitcast <2 x i16> %5 to <2 x half>
+    %conv_6 = bitcast <2 x i16> %6 to <2 x half>
+    %conv_7 = bitcast <2 x i16> %7 to <2 x half>
+    %conv_8 = bitcast <2 x i16> %8 to <2 x half>
+    %conv_9 = bitcast <2 x i16> %9 to <2 x half>
+    %conv_10 = bitcast <2 x i16> %10 to <2 x half>
+    %conv_11 = bitcast <2 x i16> %11 to <2 x half>
+    %conv_12 = bitcast <2 x i16> %12 to <2 x half>
+    %conv_13 = bitcast <2 x i16> %13 to <2 x half>
+    %conv_14 = bitcast <2 x i16> %14 to <2 x half>
+    %conv_15 = bitcast <2 x i16> %15 to <2 x half>
+
+    %res = call { float, float, float, float, float, float, float, float } @llvm.nvvm.wmma.mma.sync.row.row.m16n16k16.f32.f32( <2 x half> %conv_0, <2 x half> %conv_1, <2 x half> %conv_2, <2 x half> %conv_3, <2 x half> %conv_4, <2 x half> %conv_5, <2 x half> %conv_6, <2 x half> %conv_7, <2 x half> %conv_8, <2 x half> %conv_9, <2 x half> %conv_10, <2 x half> %conv_11, <2 x half> %conv_12, <2 x half> %conv_13, <2 x half> %conv_14, <2 x half> %conv_15, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0)
+    ret { float, float, float, float, float, float, float, float } %res
+    """),
+    mma_ret,
+    Tuple{NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}},
+    convert(NTuple{2, VecElement{Float16}}, a_0),
+    convert(NTuple{2, VecElement{Float16}}, a_1),
+    convert(NTuple{2, VecElement{Float16}}, a_2),
+    convert(NTuple{2, VecElement{Float16}}, a_3),
+    convert(NTuple{2, VecElement{Float16}}, a_4),
+    convert(NTuple{2, VecElement{Float16}}, a_5),
+    convert(NTuple{2, VecElement{Float16}}, a_6),
+    convert(NTuple{2, VecElement{Float16}}, a_7),
+    convert(NTuple{2, VecElement{Float16}}, b_0),
+    convert(NTuple{2, VecElement{Float16}}, b_1),
+    convert(NTuple{2, VecElement{Float16}}, b_2),
+    convert(NTuple{2, VecElement{Float16}}, b_3),
+    convert(NTuple{2, VecElement{Float16}}, b_4),
+    convert(NTuple{2, VecElement{Float16}}, b_5),
+    convert(NTuple{2, VecElement{Float16}}, b_6),
+    convert(NTuple{2, VecElement{Float16}}, b_7))
