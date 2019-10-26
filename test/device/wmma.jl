@@ -9,7 +9,8 @@
             buf_ptr = convert(CuPtr{Float32}, buf)
 
             function kernel(buf_ptr)
-                CUDAnative.wmma_store_d(buf_ptr)
+                data = (42, 42, 42, 42, 42, 42, 42, 42)
+                CUDAnative.wmma_store_d(buf_ptr, data..., 16)
                 return
             end
 
