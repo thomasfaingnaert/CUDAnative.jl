@@ -22,7 +22,7 @@
             @test all(res .== 42.0)
         end
 
-        @testset "wmma_load_a" begin
+        @testset "wmma_load" begin
             buf     = Mem.alloc(Mem.Device, 16 * 16 * sizeof(Float16))
             buf_ptr = convert(CuPtr{Float16}, buf)
 
@@ -33,9 +33,12 @@
             output_ptr = convert(CuPtr{Bool}, output)
 
             function kernel(buf_ptr, output_ptr)
-                data = wmma_load_a(buf_ptr, 16)
+                data_a = wmma_load_a(buf_ptr, 16)
+                data_b = wmma_load_b(buf_ptr, 16)
 
-                if all(val -> val == (VecElement{Float16}(42), VecElement{Float16}(42)), data)
+                data_ok = data -> all(val -> val == (VecElement{Float16}(42), VecElement{Float16}(42)), data)
+
+                if data_ok(data_a) && data_ok(data_b)
                     unsafe_store!(output_ptr, 1)
                 end
 
