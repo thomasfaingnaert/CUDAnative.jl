@@ -5,7 +5,7 @@
     @testset "LLVM intrinsics" begin
 
         @testset "wmma_store_d" begin
-            output     = Array{Float32, 2}(undef, (16, 16))
+            output     = Array{Float32}(undef, (16, 16))
             output_dev = CuArray(output)
 
             function kernel(output_dev)
@@ -22,7 +22,7 @@
         @testset "wmma_load" begin
             input      = 42 * ones(Float16, (16, 16))
             input_dev  = CuArray(input)
-            result     = Array{Bool, 1}(undef, 1)
+            result     = Array{Bool}(undef, 1)
             result_dev = CuArray(result)
 
             function kernel(input_dev, result_dev)
@@ -48,7 +48,7 @@
             b_dev = CuArray(b)
 
             # Reserve space for result
-            d     = Array{Float32, 2}(undef, (16, 16))
+            d     = Array{Float32}(undef, (16, 16))
             d_dev = CuArray(d)
 
             # Matrix multiply kernel (D = A * B)
@@ -63,17 +63,9 @@
 
             # Matrix multiply check on CPU
             function check_matrix_mul(a, b, res)
-                for i = 0:15
-                    for j = 0:15
-                        tmp = 0
-
-                        for k = 0:15
-                            tmp += a[1 + 16 * i + k] * b[1 + 16 * k + j]
-                        end
-
-                        if tmp ≉ res[1 + 16 * i + j] rtol=0.01
-                            return false
-                        end
+                for i = 1:16, j = 1:16
+                    if res[i, j] ≉ sum(a[i, 1:16] .* b[1:16, j]) rtol=0.01
+                        return false
                     end
                 end
 
