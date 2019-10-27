@@ -23,17 +23,6 @@ wmma_store_d(dst_addr, data_0, data_1, data_2, data_3, data_4, data_5, data_6, d
     convert(Float32, data_7),
     convert(Int32, stride))
 
-struct wmma_fragment
-    data0::NTuple{2, VecElement{Float16}}
-    data1::NTuple{2, VecElement{Float16}}
-    data2::NTuple{2, VecElement{Float16}}
-    data3::NTuple{2, VecElement{Float16}}
-    data4::NTuple{2, VecElement{Float16}}
-    data5::NTuple{2, VecElement{Float16}}
-    data6::NTuple{2, VecElement{Float16}}
-    data7::NTuple{2, VecElement{Float16}}
-end
-
 for matrix in (:a, :b)
     func_name = Symbol("wmma_load_", matrix)
     matrix_str = string(matrix)
@@ -79,17 +68,6 @@ for matrix in (:a, :b)
         Tuple{Int64 ,Int32},
         convert(Int64, src_addr),
         convert(Int32, stride))
-end
-
-struct mma_ret
-    data0::Float32
-    data1::Float32
-    data2::Float32
-    data3::Float32
-    data4::Float32
-    data5::Float32
-    data6::Float32
-    data7::Float32
 end
 
 wmma_mma(a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7, b_0, b_1, b_2, b_3, b_4, b_5, b_6, b_7) =
