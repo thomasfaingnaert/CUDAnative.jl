@@ -2,14 +2,14 @@ export wmma_store_d, wmma_load_a, wmma_load_b, wmma_mma
 
 wmma_store_d(dst_addr, data_0, data_1, data_2, data_3, data_4, data_5, data_6, data_7, stride) =
     Base.llvmcall((
-    """
+    "
     declare void @llvm.nvvm.wmma.store.d.sync.row.m16n16k16.stride.f32(i8*, float, float, float, float, float, float, float, float, i32)
-    """,
-    """
+    ",
+    "
     %dst_ptr = inttoptr i64 %0 to i8*
     call void @llvm.nvvm.wmma.store.d.sync.row.m16n16k16.stride.f32(i8* %dst_ptr, float %1, float %2, float %3, float %4, float %5, float %6, float %7, float %8, i32 %9)
     ret void
-    """),
+    "),
     Nothing,
     Tuple{Int64, Float32, Float32, Float32, Float32, Float32, Float32, Float32, Float32, Int32},
     convert(Int64, dst_addr),
@@ -72,10 +72,10 @@ end
 
 wmma_mma(a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7, b_0, b_1, b_2, b_3, b_4, b_5, b_6, b_7) =
     Base.llvmcall((
-    """
+    "
     declare { float, float, float, float, float, float, float, float } @llvm.nvvm.wmma.mma.sync.row.row.m16n16k16.f32.f32(<2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, float, float, float, float, float, float, float, float)
-    """,
-    """
+    ",
+    "
     %conv_0 = bitcast <2 x i16> %0 to <2 x half>
     %conv_1 = bitcast <2 x i16> %1 to <2 x half>
     %conv_2 = bitcast <2 x i16> %2 to <2 x half>
@@ -114,7 +114,7 @@ wmma_mma(a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7, b_0, b_1, b_2, b_3, b_4, b_5, b
     %ret_7 = insertvalue [8 x float] %ret_6, float %res_7, 7
 
     ret [8 x float] %ret_7
-    """),
+    "),
     NTuple{8, Float32},
     Tuple{NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}},
     convert(NTuple{2, VecElement{Float16}}, a_0),
