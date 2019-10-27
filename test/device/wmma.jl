@@ -65,6 +65,24 @@
                 return
             end
 
+            function check_matrix_mul(a, b, res)
+                for i = 0:15
+                    for j = 0:15
+                        tmp = 0
+
+                        for k = 0:15
+                            tmp += a[1 + 16 * i + k] * b[1 + 16 * k + j]
+                        end
+
+                        if tmp ≉ res[1 + 16 * i + j] rtol=0.01
+                            return false
+                        end
+                    end
+                end
+
+                return true
+            end
+
             # Generate random input
             a = rand(Float16, 16 * 16)
             b = rand(Float16, 16 * 16)
@@ -89,18 +107,7 @@
             # Check result
             res = zeros(Float32, 16 * 16)
             unsafe_copyto!(pointer(res), dev_res_ptr, 16 * 16)
-
-            for i=0:15
-                for j=0:15
-                    tmp = 0
-
-                    for k=0:15
-                        tmp += a[1 + 16 * i + k] * b[1 + 16 * k + j]
-                    end
-
-                    @test tmp ≈ res[1 + 16 * i + j] rtol=0.01
-                end
-            end
+            @test check_matrix_mul(a, b, res)
         end
     end
 
