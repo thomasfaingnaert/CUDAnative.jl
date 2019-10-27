@@ -5,52 +5,39 @@
     @testset "LLVM intrinsics" begin
 
         @testset "wmma_store_d" begin
-            buf     = Mem.alloc(Mem.Device, 16 * 16 * sizeof(Float32))
-            buf_ptr = convert(CuPtr{Float32}, buf)
+            output     = Array{Float32, 2}(undef, (16, 16))
+            output_dev = CuArray(output)
 
-            function kernel(buf_ptr)
+            function kernel(output_dev)
                 data = (42, 42, 42, 42, 42, 42, 42, 42)
-                wmma_store_d(buf_ptr, data..., 16)
+                wmma_store_d(pointer(output_dev), data..., 16)
                 return
             end
 
-            @cuda threads=32 kernel(buf_ptr)
+            @cuda threads=32 kernel(output_dev)
 
-            res = zeros(Float32, 16 * 16)
-            unsafe_copyto!(pointer(res), buf_ptr, 16 * 16)
-
-            @test all(res .== 42.0)
+            @test all(Array(output_dev) .== 42.0)
         end
 
         @testset "wmma_load" begin
-            buf     = Mem.alloc(Mem.Device, 16 * 16 * sizeof(Float16))
-            buf_ptr = convert(CuPtr{Float16}, buf)
+            input      = 42 * ones(Float16, (16, 16))
+            input_dev  = CuArray(input)
+            result     = Array{Bool, 1}(undef, 1)
+            result_dev = CuArray(result)
 
-            res = 42 * ones(Float16, 16 * 16)
-            unsafe_copyto!(buf_ptr, pointer(res), 16 * 16)
-
-            output = Mem.alloc(Mem.Device, sizeof(Bool))
-            output_ptr = convert(CuPtr{Bool}, output)
-
-            function kernel(buf_ptr, output_ptr)
-                data_a = wmma_load_a(buf_ptr, 16)
-                data_b = wmma_load_b(buf_ptr, 16)
+            function kernel(input_dev, result_dev)
+                data_a = wmma_load_a(pointer(input_dev), 16)
+                data_b = wmma_load_b(pointer(input_dev), 16)
 
                 data_ok = data -> all(val -> val == (VecElement{Float16}(42), VecElement{Float16}(42)), data)
-
-                if data_ok(data_a) && data_ok(data_b)
-                    unsafe_store!(output_ptr, 1)
-                end
+                result_dev[1] = data_ok(data_a) && data_ok(data_b)
 
                 return
             end
 
-            @cuda threads=32 kernel(buf_ptr, output_ptr)
+            @cuda threads=32 kernel(input_dev, result_dev)
 
-            result = zeros(Bool, 1)
-            unsafe_copyto!(pointer(result), output_ptr, 1)
-
-            @test all(result)
+            @test all(Array(result_dev))
         end
 
         @testset "wmma_mma" begin
