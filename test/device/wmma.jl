@@ -41,17 +41,27 @@
         end
 
         @testset "wmma_mma" begin
-            # Matmul kernel
-            function kernel(res, a, b)
-                a_frag = wmma_load_a(a, 16)
-                b_frag = wmma_load_b(b, 16)
+            # Generate input matrices
+            a     = rand(Float16, (16, 16))
+            a_dev = CuArray(a)
+            b     = rand(Float16, (16, 16))
+            b_dev = CuArray(b)
 
-                res_frag = wmma_mma(a_frag..., b_frag...)
+            # Reserve space for result
+            d     = Array{Float32, 2}(undef, (16, 16))
+            d_dev = CuArray(d)
 
-                wmma_store_d(res, res_frag..., 16)
+            # Matrix multiply kernel (D = A * B)
+            function kernel(a_dev, b_dev, d_dev)
+                a_frag = wmma_load_a(pointer(a_dev), 16)
+                b_frag = wmma_load_b(pointer(b_dev), 16)
+                d_frag = wmma_mma(a_frag..., b_frag...)
+                wmma_store_d(pointer(d_dev), d_frag..., 16)
+
                 return
             end
 
+            # Matrix multiply check on CPU
             function check_matrix_mul(a, b, res)
                 for i = 0:15
                     for j = 0:15
@@ -70,31 +80,11 @@
                 return true
             end
 
-            # Generate random input
-            a = rand(Float16, 16 * 16)
-            b = rand(Float16, 16 * 16)
+            # Perform multiply
+            @cuda threads=32 kernel(a_dev, b_dev, d_dev)
 
-            # Allocate memory on GPU
-            dev_res     = Mem.alloc(Mem.Device, 16 * 16 * sizeof(Float32))
-            dev_res_ptr = convert(CuPtr{Float32}, dev_res)
-
-            dev_a       = Mem.alloc(Mem.Device, 16 * 16 * sizeof(Float16))
-            dev_a_ptr   = convert(CuPtr{Float16}, dev_a)
-
-            dev_b       = Mem.alloc(Mem.Device, 16 * 16 * sizeof(Float16))
-            dev_b_ptr   = convert(CuPtr{Float16}, dev_b)
-
-            # Copy input to the GPU
-            unsafe_copyto!(dev_a_ptr, pointer(a), 16 * 16)
-            unsafe_copyto!(dev_b_ptr, pointer(b), 16 * 16)
-
-            # Perform multiplication
-            @cuda threads=32 kernel(dev_res_ptr, dev_a_ptr, dev_b_ptr)
-
-            # Check result
-            res = zeros(Float32, 16 * 16)
-            unsafe_copyto!(pointer(res), dev_res_ptr, 16 * 16)
-            @test check_matrix_mul(a, b, res)
+            # Check the result
+            @test check_matrix_mul(a, b, Array(d_dev))
         end
     end
 
