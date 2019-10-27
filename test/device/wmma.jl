@@ -10,7 +10,7 @@
 
             function kernel(buf_ptr)
                 data = (42, 42, 42, 42, 42, 42, 42, 42)
-                CUDAnative.wmma_store_d(buf_ptr, data..., 16)
+                wmma_store_d(buf_ptr, data..., 16)
                 return
             end
 
@@ -33,7 +33,7 @@
             output_ptr = convert(CuPtr{Bool}, output)
 
             function kernel(buf_ptr, output_ptr)
-                data = CUDAnative.wmma_load_a(buf_ptr, 16)
+                data = wmma_load_a(buf_ptr, 16)
 
                 expected = (VecElement{Float16}(42), VecElement{Float16}(42))
 
@@ -69,7 +69,7 @@
             output_ptr = convert(CuPtr{Bool}, output)
 
             function kernel(buf_ptr, output_ptr)
-                data = CUDAnative.wmma_load_b(buf_ptr, 16)
+                data = wmma_load_b(buf_ptr, 16)
 
                 expected = (VecElement{Float16}(42), VecElement{Float16}(42))
 
@@ -97,12 +97,12 @@
         @testset "wmma_mma" begin
             # Matmul kernel
             function kernel(res, a, b)
-                a_frag = CUDAnative.wmma_load_a(a, 16)
-                b_frag = CUDAnative.wmma_load_b(b, 16)
+                a_frag = wmma_load_a(a, 16)
+                b_frag = wmma_load_b(b, 16)
 
-                res_frag = CUDAnative.wmma_mma(a_frag.data0, a_frag.data1, a_frag.data2, a_frag.data3, a_frag.data4, a_frag.data5, a_frag.data6, a_frag.data7, b_frag.data0, b_frag.data1, b_frag.data2, b_frag.data3, b_frag.data4, b_frag.data5, b_frag.data6, b_frag.data7)
+                res_frag = wmma_mma(a_frag.data0, a_frag.data1, a_frag.data2, a_frag.data3, a_frag.data4, a_frag.data5, a_frag.data6, a_frag.data7, b_frag.data0, b_frag.data1, b_frag.data2, b_frag.data3, b_frag.data4, b_frag.data5, b_frag.data6, b_frag.data7)
 
-                CUDAnative.wmma_store_d(res, res_frag.data0, res_frag.data1, res_frag.data2, res_frag.data3, res_frag.data4, res_frag.data5, res_frag.data6, res_frag.data7, 16)
+                wmma_store_d(res, res_frag.data0, res_frag.data1, res_frag.data2, res_frag.data3, res_frag.data4, res_frag.data5, res_frag.data6, res_frag.data7, 16)
                 return
             end
 

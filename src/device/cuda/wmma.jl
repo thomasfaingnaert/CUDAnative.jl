@@ -1,4 +1,4 @@
-export wmma_store_d
+export wmma_store_d, wmma_load_a, wmma_load_b, wmma_mma
 
 wmma_store_d(dst_addr, data_0, data_1, data_2, data_3, data_4, data_5, data_6, data_7, stride) =
     Base.llvmcall((
