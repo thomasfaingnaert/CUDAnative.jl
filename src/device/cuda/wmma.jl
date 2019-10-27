@@ -116,9 +116,28 @@ wmma_mma(a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7, b_0, b_1, b_2, b_3, b_4, b_5, b
     %conv_15 = bitcast <2 x i16> %15 to <2 x half>
 
     %res = call { float, float, float, float, float, float, float, float } @llvm.nvvm.wmma.mma.sync.row.row.m16n16k16.f32.f32( <2 x half> %conv_0, <2 x half> %conv_1, <2 x half> %conv_2, <2 x half> %conv_3, <2 x half> %conv_4, <2 x half> %conv_5, <2 x half> %conv_6, <2 x half> %conv_7, <2 x half> %conv_8, <2 x half> %conv_9, <2 x half> %conv_10, <2 x half> %conv_11, <2 x half> %conv_12, <2 x half> %conv_13, <2 x half> %conv_14, <2 x half> %conv_15, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0)
-    ret { float, float, float, float, float, float, float, float } %res
+
+    %res_0 = extractvalue { float, float, float, float, float, float, float, float } %res, 0
+    %res_1 = extractvalue { float, float, float, float, float, float, float, float } %res, 1
+    %res_2 = extractvalue { float, float, float, float, float, float, float, float } %res, 2
+    %res_3 = extractvalue { float, float, float, float, float, float, float, float } %res, 3
+    %res_4 = extractvalue { float, float, float, float, float, float, float, float } %res, 4
+    %res_5 = extractvalue { float, float, float, float, float, float, float, float } %res, 5
+    %res_6 = extractvalue { float, float, float, float, float, float, float, float } %res, 6
+    %res_7 = extractvalue { float, float, float, float, float, float, float, float } %res, 7
+
+    %ret_0 = insertvalue [8 x float] undef,  float %res_0, 0
+    %ret_1 = insertvalue [8 x float] %ret_0, float %res_1, 1
+    %ret_2 = insertvalue [8 x float] %ret_1, float %res_2, 2
+    %ret_3 = insertvalue [8 x float] %ret_2, float %res_3, 3
+    %ret_4 = insertvalue [8 x float] %ret_3, float %res_4, 4
+    %ret_5 = insertvalue [8 x float] %ret_4, float %res_5, 5
+    %ret_6 = insertvalue [8 x float] %ret_5, float %res_6, 6
+    %ret_7 = insertvalue [8 x float] %ret_6, float %res_7, 7
+
+    ret [8 x float] %ret_7
     """),
-    mma_ret,
+    NTuple{8, Float32},
     Tuple{NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}},
     convert(NTuple{2, VecElement{Float16}}, a_0),
     convert(NTuple{2, VecElement{Float16}}, a_1),
