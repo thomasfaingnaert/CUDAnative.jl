@@ -4,20 +4,20 @@
 
     @testset "LLVM intrinsics" begin
 
-        @testset "wmma_store_d" begin
-            output     = Array{Float32}(undef, (16, 16))
-            output_dev = CuArray(output)
+        #= @testset "wmma_store_d" begin =#
+        #=     output     = Array{Float32}(undef, (16, 16)) =#
+        #=     output_dev = CuArray(output) =#
 
-            function kernel(output_dev)
-                data = (42, 42, 42, 42, 42, 42, 42, 42)
-                wmma_store_d(pointer(output_dev), data, 16)
-                return
-            end
+        #=     function kernel(output_dev) =#
+        #=         data = (42, 42, 42, 42, 42, 42, 42, 42) =#
+        #=         wmma_store_d(pointer(output_dev), data..., 16) =#
+        #=         return =#
+        #=     end =#
 
-            @cuda threads=32 kernel(output_dev)
+        #=     @cuda threads=32 kernel(output_dev) =#
 
-            @test all(Array(output_dev) .== 42.0)
-        end
+        #=     @test all(Array(output_dev) .== 42.0) =#
+        #= end =#
 
         #= @testset "wmma_load" begin =#
         #=     input      = 42 * ones(Float16, (16, 16)) =#
