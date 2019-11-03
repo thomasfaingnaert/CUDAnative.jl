@@ -1,3 +1,5 @@
+using StaticArrays
+
 ################################################################################
 
 export wmma_store_d, wmma_load_a, wmma_load_b, wmma_mma
@@ -245,3 +247,78 @@ wmma_mma(a, b) =
     convert(NTuple{16, Float16}, b))
 
 ################################################################################
+
+export wmma_matrix_a, wmma_matrix_b, wmma_matrix_accumulator
+export wmma_row_major, wmma_col_major, wmma_unspecified
+export wmma_fragment
+export wmma_fill_fragment, wmma_load_matrix_sync, wmma_store_matrix_sync, wmma_mma_sync
+
+abstract type wmma_fragment_use    end
+abstract type wmma_fragment_layout end
+
+struct wmma_matrix_a           <: wmma_fragment_use end
+struct wmma_matrix_b           <: wmma_fragment_use end
+struct wmma_matrix_accumulator <: wmma_fragment_use end
+
+struct wmma_row_major   <: wmma_fragment_layout end
+struct wmma_col_major   <: wmma_fragment_layout end
+struct wmma_unspecified <: wmma_fragment_layout end
+
+struct wmma_fragment{U <: wmma_fragment_use, M, N, K, T, L <: wmma_fragment_layout, fragment_size}
+    x::MVector{fragment_size, T}
+
+    function wmma_fragment(U, M, N, K, T, L = wmma_unspecified)
+        if T == Float16
+            x = MVector(Float16(0), Float16(0), Float16(0), Float16(0), Float16(0), Float16(0), Float16(0), Float16(0), Float16(0), Float16(0), Float16(0), Float16(0), Float16(0), Float16(0), Float16(0), Float16(0))
+            return new{U, M, N, K, T, L, 16}(x)
+        else
+            x = MVector(Float32(0), Float32(0), Float32(0), Float32(0), Float32(0), Float32(0), Float32(0), Float32(0))
+            return new{U, M, N, K, T, L, 8}(x)
+        end
+    end
+end
+
+function wmma_fill_fragment(frag::wmma_fragment, value)
+    fragment_size = length(frag.x)
+
+    for i = 1:fragment_size
+        @inbounds frag.x[i] = value
+    end
+end
+
+function wmma_load_matrix_sync(frag::wmma_fragment{wmma_matrix_a}, addr, stride)
+    res = wmma_load_a(addr, stride)
+    fragment_size = length(frag.x)
+
+    for i = 1:fragment_size
+        @inbounds frag.x[i] = res[i]
+    end
+end
+
+function wmma_load_matrix_sync(frag::wmma_fragment{wmma_matrix_b}, addr, stride)
+    res = wmma_load_b(addr, stride)
+    fragment_size = length(frag.x)
+
+    for i = 1:fragment_size
+        @inbounds frag.x[i] = res[i]
+    end
+end
+
+function wmma_store_matrix_sync(addr, frag::wmma_fragment{wmma_matrix_accumulator}, stride)
+    tuple = (frag.x[1], frag.x[2], frag.x[3], frag.x[4], frag.x[5], frag.x[6], frag.x[7], frag.x[8])
+    wmma_store_d(addr, tuple, stride)
+end
+
+function wmma_mma_sync(d_frag::wmma_fragment{wmma_matrix_accumulator}, a_frag::wmma_fragment{wmma_matrix_a}, b_frag::wmma_fragment{wmma_matrix_b}, c_frag::wmma_fragment{wmma_matrix_accumulator})
+
+    a = (a_frag.x[1], a_frag.x[2], a_frag.x[3], a_frag.x[4], a_frag.x[5], a_frag.x[6], a_frag.x[7], a_frag.x[8], a_frag.x[9], a_frag.x[10], a_frag.x[11], a_frag.x[12], a_frag.x[13], a_frag.x[14], a_frag.x[15], a_frag.x[16])
+    b = (b_frag.x[1], b_frag.x[2], b_frag.x[3], b_frag.x[4], b_frag.x[5], b_frag.x[6], b_frag.x[7], b_frag.x[8], b_frag.x[9], b_frag.x[10], b_frag.x[11], b_frag.x[12], b_frag.x[13], b_frag.x[14], b_frag.x[15], b_frag.x[16])
+
+    res = wmma_mma(a, b)
+
+    fragment_size = length(d_frag.x)
+
+    for i = 1:fragment_size
+        @inbounds d_frag.x[i] = res[i]
+    end
+end
