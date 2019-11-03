@@ -103,9 +103,6 @@ function code_sass(io::IO, job::CompilerJob)
     if !job.kernel
         error("Can only generate SASS code for kernel functions")
     end
-    if ptxas === nothing || nvdisasm === nothing
-        error("Your CUDA installation does not provide ptxas or nvdisasm, both of which are required for code_sass")
-    end
 
     ptx, _ = codegen(:ptx, job)
 
@@ -114,9 +111,9 @@ function code_sass(io::IO, job::CompilerJob)
     # NOTE: this might not match what is being executed, due to the PTX->SASS conversion
     #       by the driver possibly not matching what `ptxas` (part of the toolkit) does.
     # TODO: see how `nvvp` extracts SASS code when doing PC sampling, and copy that.
-    Base.run(`$ptxas --gpu-name $gpu --output-file $fn --input-as-string $ptx`)
+    Base.run(`$(ptxas[]) --gpu-name $gpu --output-file $fn --input-as-string $ptx`)
     try
-        cmd = `$nvdisasm --print-code --print-line-info $fn`
+        cmd = `$(nvdisasm[]) --print-code --print-line-info $fn`
         for line in readlines(cmd)
             # nvdisasm output is pretty verbose;
             # perform some clean-up and make it look like @code_native
@@ -285,9 +282,10 @@ Evaluates the expression `ex` and dumps all intermediate forms of code to the di
 """
 macro device_code(ex...)
     only(xs) = (@assert length(xs) == 1; first(xs))
+    localUnique = 1
     function hook(job::CompilerJob; dir::AbstractString)
         name = something(job.name, nameof(job.f))
-        fn = "$(name)_$(globalUnique+1)"
+        fn = "$(name)_$(localUnique)"
         mkpath(dir)
 
         open(joinpath(dir, "$fn.lowered.jl"), "w") do io
@@ -319,6 +317,8 @@ macro device_code(ex...)
         open(joinpath(dir, "$fn.sass"), "w") do io
             code_sass(io, job)
         end
+
+        localUnique += 1
     end
     emit_hooked_compilation(hook, ex...)
 end
