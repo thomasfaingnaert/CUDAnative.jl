@@ -19,26 +19,26 @@
             @test all(Array(output_dev) .== 42.0)
         end
 
-        #= @testset "wmma_load" begin =#
-        #=     input      = 42 * ones(Float16, (16, 16)) =#
-        #=     input_dev  = CuArray(input) =#
-        #=     result     = Array{Bool}(undef, 1) =#
-        #=     result_dev = CuArray(result) =#
+        @testset "wmma_load" begin
+            input      = 42 * ones(Float16, (16, 16))
+            input_dev  = CuArray(input)
+            result     = Array{Bool}(undef, 1)
+            result_dev = CuArray(result)
 
-        #=     function kernel(input_dev, result_dev) =#
-        #=         data_a = wmma_load_a(pointer(input_dev), 16) =#
-        #=         data_b = wmma_load_b(pointer(input_dev), 16) =#
+            function kernel(input_dev, result_dev)
+                data_a = wmma_load_a(pointer(input_dev), 16)
+                data_b = wmma_load_b(pointer(input_dev), 16)
 
-        #=         data_ok = data -> all(val -> val == (VecElement{Float16}(42), VecElement{Float16}(42)), data) =#
-        #=         result_dev[1] = data_ok(data_a) && data_ok(data_b) =#
+                data_ok = data -> all(val -> val == Float16(42), data)
+                result_dev[1] = data_ok(data_a) && data_ok(data_b)
 
-        #=         return =#
-        #=     end =#
+                return
+            end
 
-        #=     @cuda threads=32 kernel(input_dev, result_dev) =#
+            @cuda threads=32 kernel(input_dev, result_dev)
 
-        #=     @test all(Array(result_dev)) =#
-        #= end =#
+            @test all(Array(result_dev))
+        end
 
         #= @testset "wmma_mma" begin =#
         #=     # Generate input matrices =#
