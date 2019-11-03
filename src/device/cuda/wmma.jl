@@ -46,62 +46,29 @@ for matrix in (:a, :b)
     %ret_6 = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, 6
     %ret_7 = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, 7
 
-    %ret_flattened_00 = extractelement <2 x half> %ret_0, i32 0
-    %ret_flattened_01 = extractelement <2 x half> %ret_0, i32 1
-    %ret_flattened_02 = extractelement <2 x half> %ret_1, i32 0
-    %ret_flattened_03 = extractelement <2 x half> %ret_1, i32 1
-    %ret_flattened_04 = extractelement <2 x half> %ret_2, i32 0
-    %ret_flattened_05 = extractelement <2 x half> %ret_2, i32 1
-    %ret_flattened_06 = extractelement <2 x half> %ret_3, i32 0
-    %ret_flattened_07 = extractelement <2 x half> %ret_3, i32 1
-    %ret_flattened_08 = extractelement <2 x half> %ret_4, i32 0
-    %ret_flattened_09 = extractelement <2 x half> %ret_4, i32 1
-    %ret_flattened_10 = extractelement <2 x half> %ret_5, i32 0
-    %ret_flattened_11 = extractelement <2 x half> %ret_5, i32 1
-    %ret_flattened_12 = extractelement <2 x half> %ret_6, i32 0
-    %ret_flattened_13 = extractelement <2 x half> %ret_6, i32 1
-    %ret_flattened_14 = extractelement <2 x half> %ret_7, i32 0
-    %ret_flattened_15 = extractelement <2 x half> %ret_7, i32 1
+    %ret_0_conv = bitcast <2 x half> %ret_0 to <2 x i16>
+    %ret_1_conv = bitcast <2 x half> %ret_1 to <2 x i16>
+    %ret_2_conv = bitcast <2 x half> %ret_2 to <2 x i16>
+    %ret_3_conv = bitcast <2 x half> %ret_3 to <2 x i16>
+    %ret_4_conv = bitcast <2 x half> %ret_4 to <2 x i16>
+    %ret_5_conv = bitcast <2 x half> %ret_5 to <2 x i16>
+    %ret_6_conv = bitcast <2 x half> %ret_6 to <2 x i16>
+    %ret_7_conv = bitcast <2 x half> %ret_7 to <2 x i16>
 
-    %ret_flattened_00_conv = bitcast half %ret_flattened_00 to i16
-    %ret_flattened_01_conv = bitcast half %ret_flattened_01 to i16
-    %ret_flattened_02_conv = bitcast half %ret_flattened_02 to i16
-    %ret_flattened_03_conv = bitcast half %ret_flattened_03 to i16
-    %ret_flattened_04_conv = bitcast half %ret_flattened_04 to i16
-    %ret_flattened_05_conv = bitcast half %ret_flattened_05 to i16
-    %ret_flattened_06_conv = bitcast half %ret_flattened_06 to i16
-    %ret_flattened_07_conv = bitcast half %ret_flattened_07 to i16
-    %ret_flattened_08_conv = bitcast half %ret_flattened_08 to i16
-    %ret_flattened_09_conv = bitcast half %ret_flattened_09 to i16
-    %ret_flattened_10_conv = bitcast half %ret_flattened_10 to i16
-    %ret_flattened_11_conv = bitcast half %ret_flattened_11 to i16
-    %ret_flattened_12_conv = bitcast half %ret_flattened_12 to i16
-    %ret_flattened_13_conv = bitcast half %ret_flattened_13 to i16
-    %ret_flattened_14_conv = bitcast half %ret_flattened_14 to i16
-    %ret_flattened_15_conv = bitcast half %ret_flattened_15 to i16
+    %ret_aggr_0 = insertvalue [8 x <2 x i16>] undef,       <2 x i16> %ret_0_conv, 0
+    %ret_aggr_1 = insertvalue [8 x <2 x i16>] %ret_aggr_0, <2 x i16> %ret_1_conv, 1
+    %ret_aggr_2 = insertvalue [8 x <2 x i16>] %ret_aggr_1, <2 x i16> %ret_2_conv, 2
+    %ret_aggr_3 = insertvalue [8 x <2 x i16>] %ret_aggr_2, <2 x i16> %ret_3_conv, 3
+    %ret_aggr_4 = insertvalue [8 x <2 x i16>] %ret_aggr_3, <2 x i16> %ret_4_conv, 4
+    %ret_aggr_5 = insertvalue [8 x <2 x i16>] %ret_aggr_4, <2 x i16> %ret_5_conv, 5
+    %ret_aggr_6 = insertvalue [8 x <2 x i16>] %ret_aggr_5, <2 x i16> %ret_6_conv, 6
+    %ret_aggr_7 = insertvalue [8 x <2 x i16>] %ret_aggr_6, <2 x i16> %ret_7_conv, 7
 
-    %aggr_00 = insertvalue [16 x i16] undef,    i16 %ret_flattened_00_conv, 0
-    %aggr_01 = insertvalue [16 x i16] %aggr_00, i16 %ret_flattened_01_conv, 1
-    %aggr_02 = insertvalue [16 x i16] %aggr_01, i16 %ret_flattened_02_conv, 2
-    %aggr_03 = insertvalue [16 x i16] %aggr_02, i16 %ret_flattened_03_conv, 3
-    %aggr_04 = insertvalue [16 x i16] %aggr_03, i16 %ret_flattened_04_conv, 4
-    %aggr_05 = insertvalue [16 x i16] %aggr_04, i16 %ret_flattened_05_conv, 5
-    %aggr_06 = insertvalue [16 x i16] %aggr_05, i16 %ret_flattened_06_conv, 6
-    %aggr_07 = insertvalue [16 x i16] %aggr_06, i16 %ret_flattened_07_conv, 7
-    %aggr_08 = insertvalue [16 x i16] %aggr_07, i16 %ret_flattened_08_conv, 8
-    %aggr_09 = insertvalue [16 x i16] %aggr_08, i16 %ret_flattened_09_conv, 9
-    %aggr_10 = insertvalue [16 x i16] %aggr_09, i16 %ret_flattened_10_conv, 10
-    %aggr_11 = insertvalue [16 x i16] %aggr_10, i16 %ret_flattened_11_conv, 11
-    %aggr_12 = insertvalue [16 x i16] %aggr_11, i16 %ret_flattened_12_conv, 12
-    %aggr_13 = insertvalue [16 x i16] %aggr_12, i16 %ret_flattened_13_conv, 13
-    %aggr_14 = insertvalue [16 x i16] %aggr_13, i16 %ret_flattened_14_conv, 14
-    %aggr_15 = insertvalue [16 x i16] %aggr_14, i16 %ret_flattened_15_conv, 15
-
-    ret [16 x i16] %aggr_15
+    ret [8 x <2 x i16>] %ret_aggr_7
     ")
 
     @eval $func_name(src_addr, stride) = Base.llvmcall($ir,
-        NTuple{16, Float16},
+        NTuple{8, NTuple{2, VecElement{Float16}}},
         Tuple{Int64 ,Int32},
         convert(Int64, src_addr),
         convert(Int32, stride))
