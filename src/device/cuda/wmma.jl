@@ -1,4 +1,23 @@
+using Printf
+
 export wmma_store_d, wmma_load_a, wmma_load_b, wmma_mma
+
+function generate_ir(args...)
+    buf = IOBuffer()
+
+    for arg in args
+        if typeof(arg) == String
+            @printf(buf, "%s\n", arg)
+        else
+            fmt = "$(arg[1])\n"
+            for rest in zip(Base.tail(arg)...)
+                @eval @printf($buf, $fmt, $(rest...))
+            end
+        end
+    end
+
+    return String(take!(buf))
+end
 
 wmma_store_d(dst_addr, data_0, data_1, data_2, data_3, data_4, data_5, data_6, data_7, stride) =
     Base.llvmcall((
