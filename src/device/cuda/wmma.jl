@@ -1,8 +1,8 @@
 export wmma_store_d, wmma_load_a, wmma_load_b, wmma_mma
 
-macro gen_ir(template, count)
+macro gen_ir(template, count, delim="\n")
     return quote
-        join([$template for i in 0:$count-1], "\n")
+        join([$template for i in 0:$count-1], $delim)
     end
 end
 
