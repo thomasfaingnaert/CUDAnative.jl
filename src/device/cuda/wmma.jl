@@ -39,32 +39,11 @@ for matrix in (:a, :b)
 
     %ret = call { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } @llvm.nvvm.wmma.load.$matrix_str.sync.col.m16n16k16.stride.f16(i8* %src_ptr, i32 %1)
 
-    %ret_0 = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, 0
-    %ret_1 = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, 1
-    %ret_2 = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, 2
-    %ret_3 = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, 3
-    %ret_4 = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, 4
-    %ret_5 = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, 5
-    %ret_6 = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, 6
-    %ret_7 = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, 7
+    $(@gen_ir("%ret_$i = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, $i", 8))
 
-    %ret_0_conv = bitcast <2 x half> %ret_0 to <2 x i16>
-    %ret_1_conv = bitcast <2 x half> %ret_1 to <2 x i16>
-    %ret_2_conv = bitcast <2 x half> %ret_2 to <2 x i16>
-    %ret_3_conv = bitcast <2 x half> %ret_3 to <2 x i16>
-    %ret_4_conv = bitcast <2 x half> %ret_4 to <2 x i16>
-    %ret_5_conv = bitcast <2 x half> %ret_5 to <2 x i16>
-    %ret_6_conv = bitcast <2 x half> %ret_6 to <2 x i16>
-    %ret_7_conv = bitcast <2 x half> %ret_7 to <2 x i16>
+    $(@gen_ir("%ret_$(i)_conv = bitcast <2 x half> %ret_$i to <2 x i16>", 8))
 
-    %ret_aggr_0 = insertvalue [8 x <2 x i16>] undef,       <2 x i16> %ret_0_conv, 0
-    %ret_aggr_1 = insertvalue [8 x <2 x i16>] %ret_aggr_0, <2 x i16> %ret_1_conv, 1
-    %ret_aggr_2 = insertvalue [8 x <2 x i16>] %ret_aggr_1, <2 x i16> %ret_2_conv, 2
-    %ret_aggr_3 = insertvalue [8 x <2 x i16>] %ret_aggr_2, <2 x i16> %ret_3_conv, 3
-    %ret_aggr_4 = insertvalue [8 x <2 x i16>] %ret_aggr_3, <2 x i16> %ret_4_conv, 4
-    %ret_aggr_5 = insertvalue [8 x <2 x i16>] %ret_aggr_4, <2 x i16> %ret_5_conv, 5
-    %ret_aggr_6 = insertvalue [8 x <2 x i16>] %ret_aggr_5, <2 x i16> %ret_6_conv, 6
-    %ret_aggr_7 = insertvalue [8 x <2 x i16>] %ret_aggr_6, <2 x i16> %ret_7_conv, 7
+    $(@gen_ir("%ret_aggr_$i = insertvalue [8 x <2 x i16>] $(i == 0 ? "undef" : "%ret_aggr_$(i-1)"), <2 x i16> %ret_$(i)_conv, $i", 8))
 
     ret [8 x <2 x i16>] %ret_aggr_7
     ")
