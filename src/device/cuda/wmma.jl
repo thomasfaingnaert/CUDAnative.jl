@@ -39,13 +39,13 @@ for matrix in (:a, :b)
 
     %ret = call { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } @llvm.nvvm.wmma.load.$matrix_str.sync.col.m16n16k16.stride.f16(i8* %src_ptr, i32 %1)
 
-    $(@gen_ir("%ret_$i = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, $i", 8))
+    $(@gen_ir("%ret.$i = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, $i", 8))
 
-    $(@gen_ir("%ret_$(i)_conv = bitcast <2 x half> %ret_$i to <2 x i16>", 8))
+    $(@gen_ir("%ret.$i.conv = bitcast <2 x half> %ret.$i to <2 x i16>", 8))
 
-    $(@gen_ir("%ret_aggr_$i = insertvalue [8 x <2 x i16>] $(i == 0 ? "undef" : "%ret_aggr_$(i-1)"), <2 x i16> %ret_$(i)_conv, $i", 8))
+    $(@gen_ir("%ret.aggr.$i = insertvalue [8 x <2 x i16>] $(i == 0 ? "undef" : "%ret.aggr.$(i-1)"), <2 x i16> %ret.$(i).conv, $i", 8))
 
-    ret [8 x <2 x i16>] %ret_aggr_7
+    ret [8 x <2 x i16>] %ret.aggr.7
     ")
 
     @eval $func_name(src_addr, stride) = Base.llvmcall($ir,
