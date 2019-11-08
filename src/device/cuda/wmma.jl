@@ -29,21 +29,20 @@ wmma_store_d(dst_addr, data_0, data_1, data_2, data_3, data_4, data_5, data_6, d
     convert(Float32, data_7),
     convert(Int32, stride))
 
-for matrix in (:a, :b)
-    func_name = Symbol("wmma_load_", matrix)
-    matrix_str = string(matrix)
+for mat in ["a", "b"]
+    func_name = Symbol("wmma_load_", mat)
 
-    ir = ("declare { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } @llvm.nvvm.wmma.load.$matrix_str.sync.col.m16n16k16.stride.f16(i8*, i32)",
+    ir = ("declare { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } @llvm.nvvm.wmma.load.$mat.sync.col.m16n16k16.stride.f16(i8*, i32)",
     "
     %src_ptr = inttoptr i64 %0 to i8*
 
-    %ret = call { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } @llvm.nvvm.wmma.load.$matrix_str.sync.col.m16n16k16.stride.f16(i8* %src_ptr, i32 %1)
+    %ret = call { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } @llvm.nvvm.wmma.load.$mat.sync.col.m16n16k16.stride.f16(i8* %src_ptr, i32 %1)
 
     $(@gen_ir("%ret.$i = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, $i", 8))
 
     $(@gen_ir("%ret.$i.conv = bitcast <2 x half> %ret.$i to <2 x i16>", 8))
 
-    $(@gen_ir("%ret.aggr.$i = insertvalue [8 x <2 x i16>] $(i == 0 ? "undef" : "%ret.aggr.$(i-1)"), <2 x i16> %ret.$(i).conv, $i", 8))
+    $(@gen_ir("%ret.aggr.$i = insertvalue [8 x <2 x i16>] $(i == 0 ? "undef" : "%ret.aggr.$(i-1)"), <2 x i16> %ret.$i.conv, $i", 8))
 
     ret [8 x <2 x i16>] %ret.aggr.7
     ")
