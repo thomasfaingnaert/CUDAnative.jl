@@ -90,10 +90,10 @@
                 c_ty = c_elem_type == "f16" ? Float16 : Float32
 
                 # Get the function names
-                lda_func = getfield(Main, Symbol("llvm_wmma_load_a_col_m16n16k16_stride_f16"))
-                ldb_func = getfield(Main, Symbol("llvm_wmma_load_b_col_m16n16k16_stride_f16"))
+                lda_func = getfield(Main, Symbol("llvm_wmma_load_a_$(a_layout)_m16n16k16_stride_f16"))
+                ldb_func = getfield(Main, Symbol("llvm_wmma_load_b_$(b_layout)_m16n16k16_stride_f16"))
                 ldc_func = getfield(Main, Symbol("llvm_wmma_load_c_col_m16n16k16_stride_$(c_elem_type)"))
-                mma_func = getfield(Main, Symbol("llvm_wmma_mma_col_col_m16n16k16_$(d_elem_type)_$(c_elem_type)"))
+                mma_func = getfield(Main, Symbol("llvm_wmma_mma_$(a_layout)_$(b_layout)_m16n16k16_$(d_elem_type)_$(c_elem_type)"))
                 std_func = getfield(Main, Symbol("llvm_wmma_store_d_col_m16n16k16_stride_$(d_elem_type)"))
 
                 # Generate input matrices
@@ -121,7 +121,11 @@
                 end
 
                 @cuda threads=32 kernel(a_dev, b_dev, c_dev, d_dev)
-                @test a * b + c ≈ Array(d_dev) rtol=0.01
+
+                new_a = (a_layout == "col" ? a : transpose(a))
+                new_b = (b_layout == "col" ? b : transpose(b))
+
+                @test new_a * new_b + c ≈ Array(d_dev) rtol=0.01
             end
         end
     end
