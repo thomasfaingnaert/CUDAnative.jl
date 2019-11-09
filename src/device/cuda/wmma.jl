@@ -2,8 +2,7 @@ export wmma_store_d, wmma_load_a, wmma_load_b, wmma_mma
 
 macro gen_ir(template, count, delim="\n")
     return quote
-        global i
-        join([$(esc(template)) for i in 0:$(esc(count))-1], $delim)
+        join([$(esc(template)) for $(esc(:i)) in 0:$(esc(count))-1], $(esc(delim)))
     end
 end
 
