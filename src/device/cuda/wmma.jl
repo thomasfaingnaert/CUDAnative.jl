@@ -27,7 +27,9 @@ map_frag_sizes = Dict(
                       "a.f16" => 8,
                       "b.f16" => 8,
                       "c.f16" => 4,
-                      "c.f32" => 8
+                      "c.f32" => 8,
+                      "d.f16" => 4,
+                      "d.f32" => 8
                      )
 
 ################################################################################
@@ -48,13 +50,6 @@ function join_nonempty(args...)
 end
 
 get_llvm_ty(matrix, ptx_el_type) = map_ptx_to_llvm[ptx_el_type]
-
-function get_struct_ty(matrix, ptx_el_type)
-    llvm_ty = get_llvm_ty(matrix, ptx_el_type)
-    frag_size = get_frag_sz(matrix, ptx_el_type)
-
-    return "{ $(join(fill(llvm_ty, frag_size), ", ")) }"
-end
 
 get_llvmcall_ty(matrix, ptx_el_type) = map_ptx_to_llvmcall[ptx_el_type]
 
@@ -89,7 +84,7 @@ for mat in ["a", "b", "c"],
     # Determine types for this (matrix, elem_type) combination
     sz = get_frag_sz(mat, elem_type)
     llvm_ty = get_llvm_ty(mat, elem_type)
-    struct_ty = get_struct_ty(mat, elem_type)
+    struct_ty = "{ $(@gen_ir(llvm_ty, sz, ", ")) }"
     lc_ty = get_llvmcall_ty(mat, elem_type)
     jl_ty = get_jl_ty(mat, elem_type)
 
@@ -121,6 +116,50 @@ end
 ################################################################################
 # MATRIX STORE
 ################################################################################
+
+for mat in ["d"],
+    layout in ["col", "row"],
+    shape in ["m16k16n16"],
+    addr_space in ["", "shared", "global"],
+    stride in ["stride"],
+    elem_type in ["f16", "f32"]
+
+    # TODO: Non-stride versions?
+
+    # Name of the Julia wrapper function
+    func_name = Symbol(join_nonempty("llvm", "wmma", "store", mat, layout, shape, addr_space, stride, elem_type, "_"))
+
+    # Name of the LLVM intrinsic
+    llvm_intr = join_nonempty("@llvm", "nvvm", "wmma", "store", mat, "sync", layout, shape, addr_space, stride, elem_type, ".")
+
+    # Determine types for this (matrix, elem_type) combination
+    sz = get_frag_sz(mat, elem_type)
+    llvm_ty = get_llvm_ty(mat, elem_type)
+    lc_ty = get_llvmcall_ty(mat, elem_type)
+    jl_ty = get_jl_ty(mat, elem_type)
+
+    # Generate LLVM IR
+    ir = ("declare void $llvm_intr(i8*, $(@gen_ir("$llvm_ty", sz, ", ")), i32)",
+    "
+    %dst_ptr = inttoptr i64 %0 to i8*
+
+    $(@gen_ir("%data.jl.$i = extractvalue [$sz x $lc_ty] %1, $i", sz))
+
+    $(@gen_ir("%data.llvm.$i = bitcast $lc_ty %data.jl.$i to $llvm_ty", sz))
+
+    call void $llvm_intr(i8* %dst_ptr, $(@gen_ir("$llvm_ty %data.llvm.$i", sz, ", ")) , i32 %2)
+    ret void
+    ")
+
+    @eval $func_name(dst_addr, data, stride) = Base.llvmcall($ir,
+        Nothing,
+        Tuple{Int64, NTuple{$sz, $jl_ty}, Int32},
+        convert(Int64, dst_addr),
+        convert(NTuple{$sz, $jl_ty}, data),
+        convert(Int32, stride))
+
+    @eval export $func_name
+end
 
 wmma_store_d(dst_addr, data_0, data_1, data_2, data_3, data_4, data_5, data_6, data_7, stride) =
     Base.llvmcall((
