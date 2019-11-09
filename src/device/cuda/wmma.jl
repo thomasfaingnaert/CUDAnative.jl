@@ -66,12 +66,19 @@ get_frag_sz(matrix, ptx_el_type) = map_frag_sizes["$matrix.$ptx_el_type"]
 # MATRIX LOAD
 ################################################################################
 
-for mat in ["a", "b"]
-    layout = "col"
-    shape = "m16n16k16"
-    addr_space = ""
-    stride = "stride"
-    elem_type = "f16"
+for mat in ["a", "b", "c"],
+    layout in ["col", "row"],
+    shape in ["m16n16k16"],
+    addr_space in ["", "shared", "global"],
+    stride in ["stride"],
+    elem_type in ["f16", "f32"]
+
+    # TODO: Non-stride versions?
+
+    # Float32 is only supported for C
+    if (elem_type == "f32") && (mat != "c")
+        continue
+    end
 
     # Name of the Julia wrapper function
     func_name = Symbol(join_nonempty("llvm", "wmma", "load", mat, layout, shape, addr_space, stride, elem_type, "_"))
