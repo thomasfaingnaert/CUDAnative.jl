@@ -2,7 +2,8 @@ export wmma_store_d, wmma_load_a, wmma_load_b, wmma_mma
 
 macro gen_ir(template, count, delim="\n")
     return quote
-        join([$template for i in 0:$count-1], $delim)
+        global i
+        join([$(esc(template)) for i in 0:$count-1], $delim)
     end
 end
 
@@ -31,14 +32,16 @@ wmma_store_d(dst_addr, data_0, data_1, data_2, data_3, data_4, data_5, data_6, d
 
 for mat in ["a", "b"]
     func_name = Symbol("wmma_load_", mat)
+    struct_ty = "{ <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> }"
+    llvm_intr = "@llvm.nvvm.wmma.load.$mat.sync.col.m16n16k16.stride.f16"
 
-    ir = ("declare { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } @llvm.nvvm.wmma.load.$mat.sync.col.m16n16k16.stride.f16(i8*, i32)",
+    ir = ("declare $struct_ty $llvm_intr(i8*, i32)",
     "
     %src_ptr = inttoptr i64 %0 to i8*
 
-    %ret = call { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } @llvm.nvvm.wmma.load.$mat.sync.col.m16n16k16.stride.f16(i8* %src_ptr, i32 %1)
+    %ret = call $struct_ty $llvm_intr(i8* %src_ptr, i32 %1)
 
-    $(@gen_ir("%ret.$i = extractvalue { <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> } %ret, $i", 8))
+    $(@gen_ir("%ret.$i = extractvalue $struct_ty %ret, $i", 8))
 
     $(@gen_ir("%ret.$i.conv = bitcast <2 x half> %ret.$i to <2 x i16>", 8))
 
