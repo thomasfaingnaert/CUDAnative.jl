@@ -34,6 +34,7 @@ for mat in ["a", "b"]
     func_name = Symbol("wmma_load_", mat)
     struct_ty = "{ <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> }"
     llvm_intr = "@llvm.nvvm.wmma.load.$mat.sync.col.m16n16k16.stride.f16"
+    sz = 8
 
     ir = ("declare $struct_ty $llvm_intr(i8*, i32)",
     "
@@ -41,17 +42,17 @@ for mat in ["a", "b"]
 
     %ret = call $struct_ty $llvm_intr(i8* %src_ptr, i32 %1)
 
-    $(@gen_ir("%ret.$i = extractvalue $struct_ty %ret, $i", 8))
+    $(@gen_ir("%ret.$i = extractvalue $struct_ty %ret, $i", sz))
 
-    $(@gen_ir("%ret.$i.conv = bitcast <2 x half> %ret.$i to <2 x i16>", 8))
+    $(@gen_ir("%ret.$i.conv = bitcast <2 x half> %ret.$i to <2 x i16>", sz))
 
-    $(@gen_ir("%ret.aggr.$i = insertvalue [8 x <2 x i16>] $(i == 0 ? "undef" : "%ret.aggr.$(i-1)"), <2 x i16> %ret.$i.conv, $i", 8))
+    $(@gen_ir("%ret.aggr.$i = insertvalue [$sz x <2 x i16>] $(i == 0 ? "undef" : "%ret.aggr.$(i-1)"), <2 x i16> %ret.$i.conv, $i", sz))
 
-    ret [8 x <2 x i16>] %ret.aggr.7
+    ret [$sz x <2 x i16>] %ret.aggr.$(sz-1)
     ")
 
     @eval $func_name(src_addr, stride) = Base.llvmcall($ir,
-        NTuple{8, NTuple{2, VecElement{Float16}}},
+        NTuple{$sz, NTuple{2, VecElement{Float16}}},
         Tuple{Int64 ,Int32},
         convert(Int64, src_addr),
         convert(Int32, stride))
