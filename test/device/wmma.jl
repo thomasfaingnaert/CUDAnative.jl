@@ -92,8 +92,8 @@
                 # Get the function names
                 lda_func = getfield(Main, Symbol("llvm_wmma_load_a_col_m16n16k16_stride_f16"))
                 ldb_func = getfield(Main, Symbol("llvm_wmma_load_b_col_m16n16k16_stride_f16"))
-                ldc_func = getfield(Main, Symbol("llvm_wmma_load_c_col_m16n16k16_stride_f32"))
-                mma_func = getfield(Main, Symbol("llvm_wmma_mma_col_col_m16n16k16_f32_f32"))
+                ldc_func = getfield(Main, Symbol("llvm_wmma_load_c_col_m16n16k16_stride_$(c_elem_type)"))
+                mma_func = getfield(Main, Symbol("llvm_wmma_mma_col_col_m16n16k16_f32_$(c_elem_type)"))
                 std_func = getfield(Main, Symbol("llvm_wmma_store_d_col_m16n16k16_stride_f32"))
 
                 # Generate input matrices
@@ -101,7 +101,7 @@
                 a_dev = CuArray(a)
                 b     = rand(Float16, (16, 16))
                 b_dev = CuArray(b)
-                c     = rand(Float32, (16, 16))
+                c     = rand(c_ty, (16, 16))
                 c_dev = CuArray(c)
 
                 # Reserve space for result
