@@ -1,10 +1,63 @@
+################################################################################
+# WMMA CONFIGURATION
+################################################################################
+
+export wmma_config
+struct wmma_config{M, N, K} end
 
 
+################################################################################
+# WMMA LAYOUT
+################################################################################
+
+export wmma_row_major, wmma_col_major
+
+abstract type wmma_layout end
+
+struct wmma_row_major <: wmma_layout end
+struct wmma_col_major <: wmma_layout end
 
 
+################################################################################
+# WMMA FRAGMENT
+################################################################################
 
+export wmma_fragment
 
+struct wmma_fragment{N, T, L <: wmma_layout}
+    x::NTuple{N, T}
+end
 
+################################################################################
+# LOAD MATRIX A/B
+################################################################################
+
+export wmma_load_a, wmma_load_b
+
+for matrix in ["a", "b"],
+    layout in [wmma_row_major, wmma_col_major],
+    (M, N, K) in [(16, 16, 16)],
+    addr_space in [AS.Generic, AS.Global, AS.Shared],
+    el_type in [Float16]
+
+    # Julia function wrapper name
+    function_name = Symbol("wmma_load_$matrix")
+
+    @eval $function_name(src_addr::DevicePtr{$el_type, $addr_space},
+                         stride::Integer,
+                         ::Type{$layout},
+                         ::Type{wmma_config{$M, $N, $K}}) =
+                            wmma_fragment{8, NTuple{2, VecElement{Float16}}, $layout}( (
+                            (VecElement{Float16}(42), VecElement{Float16}(42)),
+                            (VecElement{Float16}(42), VecElement{Float16}(42)),
+                            (VecElement{Float16}(42), VecElement{Float16}(42)),
+                            (VecElement{Float16}(42), VecElement{Float16}(42)),
+                            (VecElement{Float16}(42), VecElement{Float16}(42)),
+                            (VecElement{Float16}(42), VecElement{Float16}(42)),
+                            (VecElement{Float16}(42), VecElement{Float16}(42)),
+                            (VecElement{Float16}(42), VecElement{Float16}(42))
+                            ) )
+end
 
 
 
