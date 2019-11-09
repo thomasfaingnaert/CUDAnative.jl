@@ -21,7 +21,7 @@
                 end
 
                 # Get the function name
-                func = getfield(Main, Symbol("llvm_wmma_load_$(mat)_col_m16n16k16_stride_f16"))
+                func = getfield(Main, Symbol("llvm_wmma_load_$(mat)_col_$(shape)_stride_f16"))
 
                 input      = 42 * ones(Float16, (16, 16))
                 input_dev  = CuArray(input)
