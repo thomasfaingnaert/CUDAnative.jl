@@ -93,8 +93,8 @@
                 lda_func = getfield(Main, Symbol("llvm_wmma_load_a_col_m16n16k16_stride_f16"))
                 ldb_func = getfield(Main, Symbol("llvm_wmma_load_b_col_m16n16k16_stride_f16"))
                 ldc_func = getfield(Main, Symbol("llvm_wmma_load_c_col_m16n16k16_stride_$(c_elem_type)"))
-                mma_func = getfield(Main, Symbol("llvm_wmma_mma_col_col_m16n16k16_f32_$(c_elem_type)"))
-                std_func = getfield(Main, Symbol("llvm_wmma_store_d_col_m16n16k16_stride_f32"))
+                mma_func = getfield(Main, Symbol("llvm_wmma_mma_col_col_m16n16k16_$(d_elem_type)_$(c_elem_type)"))
+                std_func = getfield(Main, Symbol("llvm_wmma_store_d_col_m16n16k16_stride_$(d_elem_type)"))
 
                 # Generate input matrices
                 a     = rand(Float16, (16, 16))
@@ -105,7 +105,7 @@
                 c_dev = CuArray(c)
 
                 # Reserve space for result
-                d     = Array{Float32}(undef, (16, 16))
+                d     = Array{d_ty}(undef, (16, 16))
                 d_dev = CuArray(d)
 
                 # Matrix MAC kernel (D = A * B + C)
