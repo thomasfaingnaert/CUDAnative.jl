@@ -31,8 +31,7 @@
                 function kernel(input_dev, result_dev)
                     data = func(pointer(input_dev), 16)
 
-                    data_ok = data -> all(val -> val == (VecElement{Float16}(42), VecElement{Float16}(42)), data)
-                    result_dev[1] = data_ok(data)
+                    result_dev[1] = all(val -> val == (VecElement{Float16}(42), VecElement{Float16}(42)), data)
 
                     return
                 end
