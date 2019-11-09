@@ -20,24 +20,25 @@
                     continue
                 end
 
-                # Get the function name
-                func = getfield(Main, Symbol("llvm_wmma_load_$(mat)_$(layout)_$(shape)_stride_f16"))
+                # Type-dependent variables
+                array_ty = elem_type == "f16" ? Float16 : Float32
+                expected = elem_type == "f16" ? (VecElement{Float16}(42), VecElement{Float16}(42)) : Float32(42)
 
-                input      = 42 * ones(Float16, (16, 16))
+                # Get the function name
+                func = getfield(Main, Symbol("llvm_wmma_load_$(mat)_$(layout)_$(shape)_stride_$(elem_type)"))
+
+                input      = 42 * ones(array_ty, (16, 16))
                 input_dev  = CuArray(input)
                 result     = Array{Bool}(undef, 1)
                 result_dev = CuArray(result)
 
                 function kernel(input_dev, result_dev)
                     data = func(pointer(input_dev), 16)
-
-                    result_dev[1] = all(val -> val == (VecElement{Float16}(42), VecElement{Float16}(42)), data)
-
+                    result_dev[1] = all(val -> val == expected, data)
                     return
                 end
 
                 @cuda threads=32 kernel(input_dev, result_dev)
-
                 @test all(Array(result_dev))
             end
         end
