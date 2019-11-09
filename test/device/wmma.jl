@@ -85,6 +85,17 @@
                 d_elem_type in ["f16", "f32"],
                 c_elem_type in ["f16", "f32"]
 
+                # Type-dependent variables
+                d_ty = d_elem_type == "f16" ? Float16 : Float32
+                c_ty = c_elem_type == "f16" ? Float16 : Float32
+
+                # Get the function names
+                lda_func = getfield(Main, Symbol("llvm_wmma_load_a_col_m16n16k16_stride_f16"))
+                ldb_func = getfield(Main, Symbol("llvm_wmma_load_b_col_m16n16k16_stride_f16"))
+                ldc_func = getfield(Main, Symbol("llvm_wmma_load_c_col_m16n16k16_stride_f32"))
+                mma_func = getfield(Main, Symbol("llvm_wmma_mma_col_col_m16n16k16_f32_f32"))
+                std_func = getfield(Main, Symbol("llvm_wmma_store_d_col_m16n16k16_stride_f32"))
+
                 # Generate input matrices
                 a     = rand(Float16, (16, 16))
                 a_dev = CuArray(a)
@@ -99,13 +110,13 @@
 
                 # Matrix MAC kernel (D = A * B + C)
                 function kernel(a_dev, b_dev, c_dev, d_dev)
-                    a_frag = llvm_wmma_load_a_col_m16n16k16_stride_f16(pointer(a_dev), 16)
-                    b_frag = llvm_wmma_load_b_col_m16n16k16_stride_f16(pointer(b_dev), 16)
-                    c_frag = llvm_wmma_load_c_col_m16n16k16_stride_f32(pointer(c_dev), 16)
+                    a_frag = lda_func(pointer(a_dev), 16)
+                    b_frag = ldb_func(pointer(b_dev), 16)
+                    c_frag = ldc_func(pointer(c_dev), 16)
 
-                    d_frag = llvm_wmma_mma_col_col_m16n16k16_f32_f32(a_frag, b_frag, c_frag)
+                    d_frag = mma_func(a_frag, b_frag, c_frag)
 
-                    llvm_wmma_store_d_col_m16n16k16_stride_f32(pointer(d_dev), d_frag, 16)
+                    std_func(pointer(d_dev), d_frag, 16)
                     return
                 end
 
