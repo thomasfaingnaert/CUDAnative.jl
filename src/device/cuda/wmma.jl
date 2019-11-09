@@ -1,4 +1,4 @@
-export wmma_store_d, wmma_load_a, wmma_load_b, wmma_mma
+export wmma_store_d, wmma_mma
 
 macro gen_ir(template, count, delim="\n")
     return quote
@@ -61,6 +61,8 @@ for mat in ["a", "b"]
         Tuple{Int64, Int32},
         convert(Int64, src_addr),
         convert(Int32, stride))
+
+    @eval export $func_name
 end
 
 wmma_mma(a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7, b_0, b_1, b_2, b_3, b_4, b_5, b_6, b_7) =
