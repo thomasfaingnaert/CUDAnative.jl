@@ -26,8 +26,8 @@
             result_dev = CuArray(result)
 
             function kernel(input_dev, result_dev)
-                data_a = wmma_load_a(pointer(input_dev), 16)
-                data_b = wmma_load_b(pointer(input_dev), 16)
+                data_a = llvm_wmma_load_a_col_m16n16k16_stride_f16(pointer(input_dev), 16)
+                data_b = llvm_wmma_load_b_col_m16n16k16_stride_f16(pointer(input_dev), 16)
 
                 data_ok = data -> all(val -> val == (VecElement{Float16}(42), VecElement{Float16}(42)), data)
                 result_dev[1] = data_ok(data_a) && data_ok(data_b)
@@ -53,8 +53,8 @@
 
             # Matrix multiply kernel (D = A * B)
             function kernel(a_dev, b_dev, d_dev)
-                a_frag = wmma_load_a(pointer(a_dev), 16)
-                b_frag = wmma_load_b(pointer(b_dev), 16)
+                a_frag = llvm_wmma_load_a_col_m16n16k16_stride_f16(pointer(a_dev), 16)
+                b_frag = llvm_wmma_load_b_col_m16n16k16_stride_f16(pointer(b_dev), 16)
                 d_frag = wmma_mma(a_frag..., b_frag...)
                 wmma_store_d(pointer(d_dev), d_frag..., 16)
 

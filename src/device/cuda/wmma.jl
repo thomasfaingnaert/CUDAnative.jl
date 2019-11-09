@@ -1,10 +1,119 @@
 export wmma_store_d, wmma_mma
 
+################################################################################
+# CONSTANTS
+################################################################################
+
+# Maps PTX types to LLVM types
+map_ptx_to_llvm = Dict(
+                       "f16" => "<2 x half>",
+                       "f32" => "float"
+                      )
+
+# Maps PTX types to the LLVM type that llvmcall expects
+map_ptx_to_llvmcall = Dict(
+                       "f16" => "<2 x i16>",
+                       "f32" => "float"
+                      )
+
+# Maps PTX types to Julia types
+map_ptx_to_jl = Dict(
+                     "f16" => NTuple{2, VecElement{Float16}},
+                     "f32" => Float32
+                    )
+
+# Maps matrix & PTX types to fragment sizes
+map_frag_sizes = Dict(
+                      "a.f16" => 8,
+                      "b.f16" => 8,
+                      "c.f16" => 4,
+                      "c.f32" => 8
+                     )
+
+################################################################################
+# HELPER FUNCTIONS
+################################################################################
+
 macro gen_ir(template, count, delim="\n")
     return quote
         join([$(esc(template)) for $(esc(:i)) in 0:$(esc(count))-1], $(esc(delim)))
     end
 end
+
+function join_nonempty(args...)
+    delim = args[end]
+    arr = [args[1:end-1]...]
+
+    return join(arr[arr .!= ""], delim)
+end
+
+get_llvm_ty(matrix, ptx_el_type) = map_ptx_to_llvm[ptx_el_type]
+
+function get_struct_ty(matrix, ptx_el_type)
+    llvm_ty = get_llvm_ty(matrix, ptx_el_type)
+    frag_size = get_frag_sz(matrix, ptx_el_type)
+
+    return "{ $(join(fill(llvm_ty, frag_size), ", ")) }"
+end
+
+get_llvmcall_ty(matrix, ptx_el_type) = map_ptx_to_llvmcall[ptx_el_type]
+
+get_jl_ty(matrix, ptx_el_type) = map_ptx_to_jl[ptx_el_type]
+
+get_frag_sz(matrix, ptx_el_type) = map_frag_sizes["$matrix.$ptx_el_type"]
+
+################################################################################
+# MATRIX LOAD
+################################################################################
+
+for mat in ["a", "b"]
+    layout = "col"
+    shape = "m16n16k16"
+    addr_space = ""
+    stride = "stride"
+    elem_type = "f16"
+
+    # Name of the Julia wrapper function
+    func_name = Symbol(join_nonempty("llvm", "wmma", "load", mat, layout, shape, addr_space, stride, elem_type, "_"))
+
+    # Name of the LLVM intrinsic
+    llvm_intr = join_nonempty("@llvm", "nvvm", "wmma", "load", mat, "sync", layout, shape, addr_space, stride, elem_type, ".")
+
+    # Determine types for this (matrix, elem_type) combination
+    sz = get_frag_sz(mat, elem_type)
+    llvm_ty = get_llvm_ty(mat, elem_type)
+    struct_ty = get_struct_ty(mat, elem_type)
+    lc_ty = get_llvmcall_ty(mat, elem_type)
+    jl_ty = get_jl_ty(mat, elem_type)
+
+    # Generate LLVM IR
+    ir = ("declare $struct_ty $llvm_intr(i8*, i32)",
+    "
+    %src_ptr = inttoptr i64 %0 to i8*
+
+    %ret.llvm = call $struct_ty $llvm_intr(i8* %src_ptr, i32 %1)
+
+    $(@gen_ir("%ret.llvm.$i = extractvalue $struct_ty %ret.llvm, $i", sz))
+
+    $(@gen_ir("%ret.jl.$i= bitcast $llvm_ty %ret.llvm.$i to $lc_ty", sz))
+
+    $(@gen_ir("%ret.aggr.$i = insertvalue [$sz x $lc_ty] $(i == 0 ? "undef" : "%ret.aggr.$(i-1)"), $lc_ty %ret.jl.$i, $i", sz))
+
+    ret [$sz x $lc_ty] %ret.aggr.$(sz-1)
+    ")
+
+    @eval $func_name(src_addr, stride) = Base.llvmcall($ir,
+        NTuple{$sz, $jl_ty},
+        Tuple{Int64, Int32},
+        convert(Int64, src_addr),
+        convert(Int32, stride))
+
+    @eval export $func_name
+end
+
+################################################################################
+# MATRIX STORE
+################################################################################
 
 wmma_store_d(dst_addr, data_0, data_1, data_2, data_3, data_4, data_5, data_6, data_7, stride) =
     Base.llvmcall((
@@ -29,41 +138,9 @@ wmma_store_d(dst_addr, data_0, data_1, data_2, data_3, data_4, data_5, data_6, d
     convert(Float32, data_7),
     convert(Int32, stride))
 
-for mat in ["a", "b"]
-    layout = "col"
-    shape = "m16n16k16"
-
-    func_name = Symbol("wmma_load_", mat)
-    struct_ty = "{ <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> }"
-    llvm_ty = "<2 x half>"
-    jl_ty = "<2 x i16>"
-    llvm_intr = "@llvm.nvvm.wmma.load.$mat.sync.$layout.$shape.stride.f16"
-    sz = 8
-    julia_type = NTuple{2, VecElement{Float16}}
-
-    ir = ("declare $struct_ty $llvm_intr(i8*, i32)",
-    "
-    %src_ptr = inttoptr i64 %0 to i8*
-
-    %ret.llvm = call $struct_ty $llvm_intr(i8* %src_ptr, i32 %1)
-
-    $(@gen_ir("%ret.llvm.$i = extractvalue $struct_ty %ret.llvm, $i", sz))
-
-    $(@gen_ir("%ret.jl.$i= bitcast $llvm_ty %ret.llvm.$i to $jl_ty", sz))
-
-    $(@gen_ir("%ret.aggr.$i = insertvalue [$sz x $jl_ty] $(i == 0 ? "undef" : "%ret.aggr.$(i-1)"), $jl_ty %ret.jl.$i, $i", sz))
-
-    ret [$sz x $jl_ty] %ret.aggr.$(sz-1)
-    ")
-
-    @eval $func_name(src_addr, stride) = Base.llvmcall($ir,
-        NTuple{$sz, $julia_type},
-        Tuple{Int64, Int32},
-        convert(Int64, src_addr),
-        convert(Int32, stride))
-
-    @eval export $func_name
-end
+################################################################################
+# MATRIX MULTIPLY ACCUMULATE
+################################################################################
 
 wmma_mma(a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7, b_0, b_1, b_2, b_3, b_4, b_5, b_6, b_7) =
     Base.llvmcall((
