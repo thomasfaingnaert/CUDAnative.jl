@@ -97,7 +97,7 @@ for mat in ["a", "b", "c"],
 
     $(@gen_ir("%ret.llvm.$i = extractvalue $struct_ty %ret.llvm, $i", sz))
 
-    $(@gen_ir("%ret.jl.$i= bitcast $llvm_ty %ret.llvm.$i to $lc_ty", sz))
+    $(@gen_ir("%ret.jl.$i = bitcast $llvm_ty %ret.llvm.$i to $lc_ty", sz))
 
     $(@gen_ir("%ret.aggr.$i = insertvalue [$sz x $lc_ty] $(i == 0 ? "undef" : "%ret.aggr.$(i-1)"), $lc_ty %ret.jl.$i, $i", sz))
 
@@ -165,66 +165,80 @@ end
 # MATRIX MULTIPLY ACCUMULATE
 ################################################################################
 
-wmma_mma(a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7, b_0, b_1, b_2, b_3, b_4, b_5, b_6, b_7) =
-    Base.llvmcall((
+for a_layout in ["col", "row"],
+    b_layout in ["col", "row"],
+    shape in ["m16n16k16"],
+    d_elem_type in ["f16", "f32"],
+    c_elem_type in ["f16", "f32"],
+    b_elem_type in ["f16"],
+    a_elem_type in ["f16"]
+
+    # Name of the Julia wrapper function
+    func_name = Symbol(join_nonempty("llvm", "wmma", "mma", a_layout, b_layout, shape, d_elem_type, c_elem_type, "_"))
+
+    # Name of the LLVM intrinsic
+    llvm_intr = join_nonempty("@llvm", "nvvm", "wmma", "mma", "sync", a_layout, b_layout, shape, d_elem_type, c_elem_type, ".")
+
+    # Determine types for the (matrix, elem_type) combinations for matrix A
+    a_sz = get_frag_sz("a", a_elem_type)
+    a_llvm_ty = get_llvm_ty("a", a_elem_type)
+    a_lc_ty = get_llvmcall_ty("a", a_elem_type)
+    a_jl_ty = get_jl_ty("a", a_elem_type)
+
+    # Determine types for the (matrix, elem_type) combinations for matrix B
+    b_sz = get_frag_sz("b", b_elem_type)
+    b_llvm_ty = get_llvm_ty("b", b_elem_type)
+    b_lc_ty = get_llvmcall_ty("b", b_elem_type)
+    b_jl_ty = get_jl_ty("b", b_elem_type)
+
+    # Determine types for the (matrix, elem_type) combinations for matrix C
+    c_sz = get_frag_sz("c", c_elem_type)
+    c_llvm_ty = get_llvm_ty("c", c_elem_type)
+    c_lc_ty = get_llvmcall_ty("c", c_elem_type)
+    c_jl_ty = get_jl_ty("c", c_elem_type)
+
+    # Determine types for the (matrix, elem_type) combinations for matrix D
+    d_sz = get_frag_sz("d", d_elem_type)
+    d_llvm_ty = get_llvm_ty("d", d_elem_type)
+    d_lc_ty = get_llvmcall_ty("d", d_elem_type)
+    d_jl_ty = get_jl_ty("d", d_elem_type)
+    d_struct_ty = "{ $(@gen_ir(d_llvm_ty, d_sz, ", ")) }"
+
+    # Create the argument string to the IR call
+    args = join([
+                @gen_ir("$a_llvm_ty %a.llvm.$i", a_sz, ", "),
+                @gen_ir("$b_llvm_ty %b.llvm.$i", b_sz, ", "),
+                @gen_ir("$c_llvm_ty %c.llvm.$i", c_sz, ", ")]
+                , ", ")
+
+    # Generate LLVM IR
+    ir = ("declare $d_struct_ty $llvm_intr($args)",
     "
-    declare { float, float, float, float, float, float, float, float } @llvm.nvvm.wmma.mma.sync.col.col.m16n16k16.f32.f32(<2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, float, float, float, float, float, float, float, float)
-    ",
-    "
-    %conv_0 = bitcast <2 x i16> %0 to <2 x half>
-    %conv_1 = bitcast <2 x i16> %1 to <2 x half>
-    %conv_2 = bitcast <2 x i16> %2 to <2 x half>
-    %conv_3 = bitcast <2 x i16> %3 to <2 x half>
-    %conv_4 = bitcast <2 x i16> %4 to <2 x half>
-    %conv_5 = bitcast <2 x i16> %5 to <2 x half>
-    %conv_6 = bitcast <2 x i16> %6 to <2 x half>
-    %conv_7 = bitcast <2 x i16> %7 to <2 x half>
-    %conv_8 = bitcast <2 x i16> %8 to <2 x half>
-    %conv_9 = bitcast <2 x i16> %9 to <2 x half>
-    %conv_10 = bitcast <2 x i16> %10 to <2 x half>
-    %conv_11 = bitcast <2 x i16> %11 to <2 x half>
-    %conv_12 = bitcast <2 x i16> %12 to <2 x half>
-    %conv_13 = bitcast <2 x i16> %13 to <2 x half>
-    %conv_14 = bitcast <2 x i16> %14 to <2 x half>
-    %conv_15 = bitcast <2 x i16> %15 to <2 x half>
+    $(@gen_ir("%a.jl.$i = extractvalue [$a_sz x $a_lc_ty] %0, $i", a_sz))
+    $(@gen_ir("%b.jl.$i = extractvalue [$b_sz x $b_lc_ty] %1, $i", b_sz))
+    $(@gen_ir("%c.jl.$i = extractvalue [$c_sz x $c_lc_ty] %2, $i", c_sz))
 
-    %res = call { float, float, float, float, float, float, float, float } @llvm.nvvm.wmma.mma.sync.col.col.m16n16k16.f32.f32( <2 x half> %conv_0, <2 x half> %conv_1, <2 x half> %conv_2, <2 x half> %conv_3, <2 x half> %conv_4, <2 x half> %conv_5, <2 x half> %conv_6, <2 x half> %conv_7, <2 x half> %conv_8, <2 x half> %conv_9, <2 x half> %conv_10, <2 x half> %conv_11, <2 x half> %conv_12, <2 x half> %conv_13, <2 x half> %conv_14, <2 x half> %conv_15, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0, float 0.0e+0)
+    $(@gen_ir("%a.llvm.$i = bitcast $a_lc_ty %a.jl.$i to $a_llvm_ty", a_sz))
+    $(@gen_ir("%b.llvm.$i = bitcast $b_lc_ty %b.jl.$i to $b_llvm_ty", b_sz))
+    $(@gen_ir("%c.llvm.$i = bitcast $c_lc_ty %c.jl.$i to $c_llvm_ty", c_sz))
 
-    %res_0 = extractvalue { float, float, float, float, float, float, float, float } %res, 0
-    %res_1 = extractvalue { float, float, float, float, float, float, float, float } %res, 1
-    %res_2 = extractvalue { float, float, float, float, float, float, float, float } %res, 2
-    %res_3 = extractvalue { float, float, float, float, float, float, float, float } %res, 3
-    %res_4 = extractvalue { float, float, float, float, float, float, float, float } %res, 4
-    %res_5 = extractvalue { float, float, float, float, float, float, float, float } %res, 5
-    %res_6 = extractvalue { float, float, float, float, float, float, float, float } %res, 6
-    %res_7 = extractvalue { float, float, float, float, float, float, float, float } %res, 7
+    %d.llvm = call $d_struct_ty $llvm_intr($args)
 
-    %ret_0 = insertvalue [8 x float] undef,  float %res_0, 0
-    %ret_1 = insertvalue [8 x float] %ret_0, float %res_1, 1
-    %ret_2 = insertvalue [8 x float] %ret_1, float %res_2, 2
-    %ret_3 = insertvalue [8 x float] %ret_2, float %res_3, 3
-    %ret_4 = insertvalue [8 x float] %ret_3, float %res_4, 4
-    %ret_5 = insertvalue [8 x float] %ret_4, float %res_5, 5
-    %ret_6 = insertvalue [8 x float] %ret_5, float %res_6, 6
-    %ret_7 = insertvalue [8 x float] %ret_6, float %res_7, 7
+    $(@gen_ir("%d.llvm.$i = extractvalue $d_struct_ty %d.llvm, $i", d_sz))
 
-    ret [8 x float] %ret_7
-    "),
-    NTuple{8, Float32},
-    Tuple{NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}, NTuple{2, VecElement{Float16}}},
-    convert(NTuple{2, VecElement{Float16}}, a_0),
-    convert(NTuple{2, VecElement{Float16}}, a_1),
-    convert(NTuple{2, VecElement{Float16}}, a_2),
-    convert(NTuple{2, VecElement{Float16}}, a_3),
-    convert(NTuple{2, VecElement{Float16}}, a_4),
-    convert(NTuple{2, VecElement{Float16}}, a_5),
-    convert(NTuple{2, VecElement{Float16}}, a_6),
-    convert(NTuple{2, VecElement{Float16}}, a_7),
-    convert(NTuple{2, VecElement{Float16}}, b_0),
-    convert(NTuple{2, VecElement{Float16}}, b_1),
-    convert(NTuple{2, VecElement{Float16}}, b_2),
-    convert(NTuple{2, VecElement{Float16}}, b_3),
-    convert(NTuple{2, VecElement{Float16}}, b_4),
-    convert(NTuple{2, VecElement{Float16}}, b_5),
-    convert(NTuple{2, VecElement{Float16}}, b_6),
-    convert(NTuple{2, VecElement{Float16}}, b_7))
+    $(@gen_ir("%d.jl.$i = bitcast $d_llvm_ty %d.llvm.$i to $d_lc_ty", d_sz))
+
+    $(@gen_ir("%d.aggr.$i = insertvalue [$d_sz x $d_lc_ty] $(i == 0 ? "undef" : "%d.aggr.$(i-1)"), $d_lc_ty %d.jl.$i, $i", d_sz))
+
+    ret [$d_sz x $d_lc_ty] %d.aggr.$(d_sz-1)
+    ")
+
+    @eval $func_name(a, b, c) = Base.llvmcall($ir,
+        NTuple{$d_sz, $d_jl_ty},
+        Tuple{NTuple{$a_sz, $a_jl_ty}, NTuple{$b_sz, $b_jl_ty}, NTuple{$c_sz, $c_jl_ty}},
+        convert(NTuple{$a_sz, $a_jl_ty}, a),
+        convert(NTuple{$b_sz, $b_jl_ty}, b),
+        convert(NTuple{$c_sz, $c_jl_ty}, c))
+
+    @eval export $func_name
+end
