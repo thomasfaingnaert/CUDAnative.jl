@@ -78,33 +78,40 @@
             end
         end
 
-        @testset "wmma_mma" begin
-            # Generate input matrices
-            a     = rand(Float16, (16, 16))
-            a_dev = CuArray(a)
-            b     = rand(Float16, (16, 16))
-            b_dev = CuArray(b)
-            c     = rand(Float32, (16, 16))
-            c_dev = CuArray(c)
+        @testset "llvm_wmma_mma" begin
+            @testset "$(a_layout)_$(b_layout)_$(shape)_$(d_elem_type)_$(c_elem_type)" for a_layout in ["row", "col"],
+                b_layout in ["row", "col"],
+                shape in ["m16n16k16"],
+                d_elem_type in ["f16", "f32"],
+                c_elem_type in ["f16", "f32"]
 
-            # Reserve space for result
-            d     = Array{Float32}(undef, (16, 16))
-            d_dev = CuArray(d)
+                # Generate input matrices
+                a     = rand(Float16, (16, 16))
+                a_dev = CuArray(a)
+                b     = rand(Float16, (16, 16))
+                b_dev = CuArray(b)
+                c     = rand(Float32, (16, 16))
+                c_dev = CuArray(c)
 
-            # Matrix MAC kernel (D = A * B + C)
-            function kernel(a_dev, b_dev, c_dev, d_dev)
-                a_frag = llvm_wmma_load_a_col_m16n16k16_stride_f16(pointer(a_dev), 16)
-                b_frag = llvm_wmma_load_b_col_m16n16k16_stride_f16(pointer(b_dev), 16)
-                c_frag = llvm_wmma_load_c_col_m16n16k16_stride_f32(pointer(c_dev), 16)
+                # Reserve space for result
+                d     = Array{Float32}(undef, (16, 16))
+                d_dev = CuArray(d)
 
-                d_frag = llvm_wmma_mma_col_col_m16n16k16_f32_f32(a_frag, b_frag, c_frag)
+                # Matrix MAC kernel (D = A * B + C)
+                function kernel(a_dev, b_dev, c_dev, d_dev)
+                    a_frag = llvm_wmma_load_a_col_m16n16k16_stride_f16(pointer(a_dev), 16)
+                    b_frag = llvm_wmma_load_b_col_m16n16k16_stride_f16(pointer(b_dev), 16)
+                    c_frag = llvm_wmma_load_c_col_m16n16k16_stride_f32(pointer(c_dev), 16)
 
-                llvm_wmma_store_d_col_m16n16k16_stride_f32(pointer(d_dev), d_frag, 16)
-                return
+                    d_frag = llvm_wmma_mma_col_col_m16n16k16_f32_f32(a_frag, b_frag, c_frag)
+
+                    llvm_wmma_store_d_col_m16n16k16_stride_f32(pointer(d_dev), d_frag, 16)
+                    return
+                end
+
+                @cuda threads=32 kernel(a_dev, b_dev, c_dev, d_dev)
+                @test a * b + c ≈ Array(d_dev) rtol=0.01
             end
-
-            @cuda threads=32 kernel(a_dev, b_dev, c_dev, d_dev)
-            @test a * b + c ≈ Array(d_dev) rtol=0.01
         end
     end
 
