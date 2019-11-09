@@ -13,12 +13,15 @@
                 stride in ["stride"],
                 elem_type in ["f16", "f32"]
 
+                # TODO: Test address space?
+
                 # Float32 is only supported for C
                 if (elem_type == "f32") && (mat != "c")
                     continue
                 end
 
-                # TODO: Test address space?
+                # Get the function name
+                func = getfield(Main, Symbol("llvm_wmma_load_$(mat)_col_m16n16k16_stride_f16"))
 
                 input      = 42 * ones(Float16, (16, 16))
                 input_dev  = CuArray(input)
@@ -26,11 +29,10 @@
                 result_dev = CuArray(result)
 
                 function kernel(input_dev, result_dev)
-                    data_a = llvm_wmma_load_a_col_m16n16k16_stride_f16(pointer(input_dev), 16)
-                    data_b = llvm_wmma_load_b_col_m16n16k16_stride_f16(pointer(input_dev), 16)
+                    data = func(pointer(input_dev), 16)
 
                     data_ok = data -> all(val -> val == (VecElement{Float16}(42), VecElement{Float16}(42)), data)
-                    result_dev[1] = data_ok(data_a) && data_ok(data_b)
+                    result_dev[1] = data_ok(data)
 
                     return
                 end
