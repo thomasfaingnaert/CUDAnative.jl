@@ -5,7 +5,6 @@
     @testset "LLVM intrinsics" begin
 
         @testset "llvm_wmma_load" begin
-
             @testset "$(mat)_$(layout)_$(shape)_$(addr_space)_$(elem_type)" for mat in ["a", "b", "c"],
                 layout in ["row", "col"],
                 shape in ["m16n16k16"],
@@ -43,19 +42,40 @@
             end
         end
 
-        @testset "wmma_store_d" begin
-            output     = Array{Float32}(undef, (16, 16))
-            output_dev = CuArray(output)
+        @testset "llvm_wmma_store" begin
+            @testset "$(mat)_$(layout)_$(shape)_$(addr_space)_$(elem_type)" for mat in ["d"],
+                layout in ["row", "col"],
+                shape in ["m16n16k16"],
+                addr_space in [""],
+                stride in ["stride"],
+                elem_type in ["f16", "f32"]
 
-            function kernel(output_dev)
-                data = (42, 42, 42, 42, 42, 42, 42, 42)
-                llvm_wmma_store_d_col_m16n16k16_stride_f32(pointer(output_dev), data, 16)
-                return
+                # TODO: Test address space?
+
+                # Type-dependent variables
+                array_ty = elem_type == "f16" ? Float16 : Float32
+                data = elem_type == "f16" ?
+                    (
+                       (VecElement{Float16}(42), VecElement{Float16}(42)),
+                       (VecElement{Float16}(42), VecElement{Float16}(42)),
+                       (VecElement{Float16}(42), VecElement{Float16}(42)),
+                       (VecElement{Float16}(42), VecElement{Float16}(42))
+                    ) : (42, 42, 42, 42, 42, 42, 42, 42)
+
+                # Get the function name
+                func = getfield(Main, Symbol("llvm_wmma_store_$(mat)_$(layout)_$(shape)_stride_$(elem_type)"))
+
+                output     = Array{array_ty}(undef, (16, 16))
+                output_dev = CuArray(output)
+
+                function kernel(output_dev)
+                    func(pointer(output_dev), data, 16)
+                    return
+                end
+
+                @cuda threads=32 kernel(output_dev)
+                @test all(Array(output_dev) .== 42.0)
             end
-
-            @cuda threads=32 kernel(output_dev)
-
-            @test all(Array(output_dev) .== 42.0)
         end
 
         @testset "wmma_mma" begin
