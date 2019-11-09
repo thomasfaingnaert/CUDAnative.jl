@@ -49,7 +49,7 @@
 
             function kernel(output_dev)
                 data = (42, 42, 42, 42, 42, 42, 42, 42)
-                wmma_store_d(pointer(output_dev), data..., 16)
+                llvm_wmma_store_d_col_m16n16k16_stride_f32(pointer(output_dev), data, 16)
                 return
             end
 
@@ -74,7 +74,7 @@
                 a_frag = llvm_wmma_load_a_col_m16n16k16_stride_f16(pointer(a_dev), 16)
                 b_frag = llvm_wmma_load_b_col_m16n16k16_stride_f16(pointer(b_dev), 16)
                 d_frag = wmma_mma(a_frag..., b_frag...)
-                wmma_store_d(pointer(d_dev), d_frag..., 16)
+                llvm_wmma_store_d_col_m16n16k16_stride_f32(pointer(d_dev), d_frag, 16)
 
                 return
             end
