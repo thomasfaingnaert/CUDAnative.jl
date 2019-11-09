@@ -30,29 +30,35 @@ wmma_store_d(dst_addr, data_0, data_1, data_2, data_3, data_4, data_5, data_6, d
     convert(Int32, stride))
 
 for mat in ["a", "b"]
+    layout = "col"
+    shape = "m16n16k16"
+
     func_name = Symbol("wmma_load_", mat)
     struct_ty = "{ <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half>, <2 x half> }"
-    llvm_intr = "@llvm.nvvm.wmma.load.$mat.sync.col.m16n16k16.stride.f16"
+    llvm_ty = "<2 x half>"
+    jl_ty = "<2 x i16>"
+    llvm_intr = "@llvm.nvvm.wmma.load.$mat.sync.$layout.$shape.stride.f16"
     sz = 8
+    julia_type = NTuple{2, VecElement{Float16}}
 
     ir = ("declare $struct_ty $llvm_intr(i8*, i32)",
     "
     %src_ptr = inttoptr i64 %0 to i8*
 
-    %ret = call $struct_ty $llvm_intr(i8* %src_ptr, i32 %1)
+    %ret.llvm = call $struct_ty $llvm_intr(i8* %src_ptr, i32 %1)
 
-    $(@gen_ir("%ret.$i = extractvalue $struct_ty %ret, $i", sz))
+    $(@gen_ir("%ret.llvm.$i = extractvalue $struct_ty %ret.llvm, $i", sz))
 
-    $(@gen_ir("%ret.$i.conv = bitcast <2 x half> %ret.$i to <2 x i16>", sz))
+    $(@gen_ir("%ret.jl.$i= bitcast $llvm_ty %ret.llvm.$i to $jl_ty", sz))
 
-    $(@gen_ir("%ret.aggr.$i = insertvalue [$sz x <2 x i16>] $(i == 0 ? "undef" : "%ret.aggr.$(i-1)"), <2 x i16> %ret.$i.conv, $i", sz))
+    $(@gen_ir("%ret.aggr.$i = insertvalue [$sz x $jl_ty] $(i == 0 ? "undef" : "%ret.aggr.$(i-1)"), $jl_ty %ret.jl.$i, $i", sz))
 
-    ret [$sz x <2 x i16>] %ret.aggr.$(sz-1)
+    ret [$sz x $jl_ty] %ret.aggr.$(sz-1)
     ")
 
     @eval $func_name(src_addr, stride) = Base.llvmcall($ir,
-        NTuple{$sz, NTuple{2, VecElement{Float16}}},
-        Tuple{Int64 ,Int32},
+        NTuple{$sz, $julia_type},
+        Tuple{Int64, Int32},
         convert(Int64, src_addr),
         convert(Int32, stride))
 end
