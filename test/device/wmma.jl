@@ -37,8 +37,7 @@
 
                 @cuda threads=32 kernel(input_dev, result_dev)
 
-                #= @test all(Array(result_dev)) =#
-                @test false
+                @test all(Array(result_dev))
             end
         end
 
