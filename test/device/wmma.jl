@@ -184,8 +184,8 @@ if VERSION >= v"1.4.0-DEV.534"
                     c_frag = wmma_fill_c($c_type(0), conf)
                 end
 
-                #= a_frag = alpha .* a_frag =#
-                #= c_frag = beta .* c_frag =#
+                a_frag = alpha .* a_frag
+                c_frag = beta .* c_frag
 
                 d_frag = wmma_mma(a_frag, b_frag, c_frag, conf)
 
