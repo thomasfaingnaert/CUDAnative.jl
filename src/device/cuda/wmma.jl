@@ -165,23 +165,10 @@ end
 ################################################################################
 
 # Base case (Float16, Float32, ...)
-flatten_recurse(typ, e) = [:($e)]
 unflatten_recurse(typ, e, idx) = :($e[$idx]), idx + 1
 
 # VecElements
-flatten_recurse(typ::Type{VecElement{T}}, e) where T = [:($e.value)]
 unflatten_recurse(typ::Type{VecElement{T}}, e, idx) where T = :(VecElement{$T}($e[$idx])), idx + 1
-
-# NTuples
-function flatten_recurse(typ::Type{NTuple{N, T}}, e) where {N, T}
-    ret = Expr[]
-
-    for (i, eltyp) in enumerate(typ.types)
-        append!(ret, flatten_recurse(eltyp, :($e[$i])))
-    end
-
-    return ret
-end
 
 function unflatten_recurse(typ::Type{NTuple{N, T}}, e, idx) where {N, T}
     ret = Expr(:tuple)
@@ -194,5 +181,4 @@ function unflatten_recurse(typ::Type{NTuple{N, T}}, e, idx) where {N, T}
     return ret, idx
 end
 
-@generated flatten(x::typ) where typ = Expr(:tuple, flatten_recurse(typ, :x)...)
 @generated unflatten(::Type{typ}, x) where typ = unflatten_recurse(typ, :x, 1)[1]
