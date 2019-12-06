@@ -1,4 +1,4 @@
-function unflatten_recurse(typ::Type{NTuple{N, T}}, e, idx) where {N, T}
+function unflatten_recurse(typ::Type{NTuple{8, VecElement{Float16}}}, e, idx)
     ret = Expr(:tuple)
 
     for (i, eltyp) in enumerate(typ.types)
