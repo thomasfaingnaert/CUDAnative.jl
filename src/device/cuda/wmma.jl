@@ -1,9 +1,5 @@
-func_name = Symbol("llvm_wmma_load_a_row_m16n16k16_stride_f16")
-llvm_intr = "llvm.nvvm.wmma.m16n16k16.load.a.row.stride.f16.p0i8"
-ccall_name = "extern $llvm_intr"
-
-@eval $func_name(src_addr, stride) = ccall($ccall_name, llvmcall, NTuple{8, NTuple{2, VecElement{Float16}}}, (Ref{Float16}, Int32), src_addr, stride)
-@eval export $func_name
+@eval llvm_wmma_load_a_row_m16n16k16_stride_f16(src_addr, stride) = ccall("extern llvm.nvvm.wmma.m16n16k16.load.a.row.stride.f16.p0i8", llvmcall, NTuple{8, NTuple{2, VecElement{Float16}}}, (Ref{Float16}, Int32), src_addr, stride)
+@eval export llvm_wmma_load_a_row_m16n16k16_stride_f16
 
 unflatten_recurse(typ, e, idx) = :($e[$idx]), idx + 1
 
