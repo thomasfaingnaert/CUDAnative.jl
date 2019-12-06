@@ -1,4 +1,4 @@
-unflatten_recurse(typ::Type{VecElement{T}}, e, idx) where T = :(VecElement{$T}($e[$idx])), idx + 1
+unflatten_recurse(typ::Type{VecElement{Float16}}, e, idx) = :(VecElement{Float16}($e[$idx])), idx + 1
 
 function unflatten_recurse(typ::Type{NTuple{N, T}}, e, idx) where {N, T}
     ret = Expr(:tuple)
