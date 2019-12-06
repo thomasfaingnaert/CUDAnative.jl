@@ -59,36 +59,16 @@ get_addrspace_info(addr_space) = map_ptx_as_to_int[addr_space]
 # Matrix load
 # -----------
 
-for mat in ["a", "b", "c"],
-    layout in ["col", "row"],
-    shape in ["m16n16k16"],
-    addr_space in ["", "shared", "global"],
-    stride in ["stride"],
-    elem_type in ["f16", "f32"]
+# Name of the Julia wrapper function
+func_name = Symbol(join_nonempty("llvm", "wmma", "load", "a", "row", "m16n16k16", "stride", "f16", "_"))
 
-    # TODO: Non-stride versions?
+# Name of the LLVM intrinsic
+llvm_intr = "llvm.nvvm.wmma.m16n16k16.load.a.row.stride.f16.p0i8"
 
-    # Float32 is only supported for C
-    if (elem_type == "f32") && (mat != "c")
-        continue
-    end
+ccall_name = "extern $llvm_intr"
 
-    addr_space_int = get_addrspace_info(addr_space)
-
-    # Name of the Julia wrapper function
-    func_name = Symbol(join_nonempty("llvm", "wmma", "load", mat, layout, shape, addr_space, stride, elem_type, "_"))
-
-    # Name of the LLVM intrinsic
-    llvm_intr = "llvm.nvvm.wmma.$shape.load.$mat.$layout.stride.$elem_type.p$(addr_space_int)i8"
-
-    # Determine types + size for this (matrix, elem_type) combination
-    arr_ty, frag_ty, sz = get_frag_info(mat, elem_type)
-
-    ccall_name = "extern $llvm_intr"
-
-    @eval $func_name(src_addr, stride) = ccall($ccall_name, llvmcall, NTuple{$sz, $frag_ty}, (Ref{$arr_ty}, Int32), src_addr, stride)
-    @eval export $func_name
-end
+@eval $func_name(src_addr, stride) = ccall($ccall_name, llvmcall, NTuple{8, NTuple{2, VecElement{Float16}}}, (Ref{Float16}, Int32), src_addr, stride)
+@eval export $func_name
 
 ################################################################################
 # FLATTENING/UNFLATTENING LOGIC
