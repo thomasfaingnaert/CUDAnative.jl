@@ -119,7 +119,7 @@ In what follows, each of these will be discussed.
 using Markdown
 Markdown.parse("""
 ```julia
-$(pwd())
+$(read("../../../../examples/wmma/low-level.jl", String))
 ```
 """)
 ````
