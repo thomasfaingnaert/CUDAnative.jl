@@ -1,3 +1,6 @@
+# Need https://github.com/JuliaLang/julia/pull/33970
+if VERSION >= v"1.4.0-DEV.534"
+
 using CUDAnative
 using CuArrays
 using Test
@@ -29,3 +32,5 @@ end
 d = Array(d_dev)
 
 @test all(isapprox.(a * b + c, d; rtol=0.01))
+
+end

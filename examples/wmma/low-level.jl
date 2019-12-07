@@ -1,3 +1,6 @@
+# Need https://github.com/JuliaLang/julia/pull/33970
+if VERSION >= v"1.4.0-DEV.534"
+
 using CUDAnative
 using CuArrays
 using Test
@@ -27,3 +30,5 @@ end
 
 @cuda threads=32 kernel(a_dev, b_dev, c_dev, d_dev)
 @test all(isapprox.(a * b + c, Array(d_dev); rtol=0.01))
+
+end
