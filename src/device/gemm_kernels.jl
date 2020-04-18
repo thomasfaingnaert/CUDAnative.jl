@@ -245,6 +245,7 @@ export LayoutBase, layout_eltype, layout_size, layout_load, layout_store!
 abstract type LayoutBase{T} end
 
 @inline layout_eltype(::Type{<:LayoutBase{T}}) where {T} = T
+@inline layout_size(::Type{<:LayoutBase{T}}, logical_size::NamedTuple) where {T} = Tuple(logical_size)
 
 # ---------------
 # AlignedColMajor
@@ -252,8 +253,6 @@ abstract type LayoutBase{T} end
 
 export AlignedColMajor
 struct AlignedColMajor{T} <: LayoutBase{T} end
-
-@inline layout_size(::Type{AlignedColMajor{T}}, logical_size::NamedTuple) where {T} = Tuple(logical_size)
 
 @inline function layout_load(::Type{AlignedColMajor{T}}, workspace, tile::Tile, logical_size::NamedTuple) where {T}
     N = 16 ÷ sizeof(T)
