@@ -226,4 +226,74 @@ end
 ################################################################################
 
 module Gemm
+
+################################################################################
+# GEMM API: LAYOUTS
+################################################################################
+
+module Layout
+
+using CUDAnative: Vec, vloada, vstorea!
+using CUDAnative.Tiling: Tile, linearise
+
+# -----------
+# Layout base
+# -----------
+
+export LayoutBase, layout_eltype, layout_size, layout_load, layout_store!
+
+abstract type LayoutBase{T} end
+
+@inline layout_eltype(::Type{<:LayoutBase{T}}) where {T} = T
+
+# ---------------
+# AlignedColMajor
+# ---------------
+
+export AlignedColMajor
+struct AlignedColMajor{T} <: LayoutBase{T} end
+
+@inline layout_size(::Type{AlignedColMajor{T}}, logical_size::NamedTuple) where {T} = Tuple(logical_size)
+
+@inline function layout_load(::Type{AlignedColMajor{T}}, workspace, tile::Tile, logical_size::NamedTuple) where {T}
+    N = 16 ÷ sizeof(T)
+    ptr = pointer(workspace, linearise(tile.base, logical_size))
+    return vloada(Vec{N, T}, ptr, linearise(tile.offset, logical_size))
+end
+
+@inline function layout_store!(::Type{AlignedColMajor{T}}, workspace, value, tile::Tile, logical_size::NamedTuple) where {T}
+    N = 16 ÷ sizeof(T)
+    ptr = pointer(workspace, linearise(tile.base, logical_size))
+    return vstorea!(Vec{N, T}, ptr, value, linearise(tile.offset, logical_size))
+end
+
+# ---------------------
+# PaddedAlignedColMajor
+# ---------------------
+
+export PaddedAlignedColMajor
+struct PaddedAlignedColMajor{T, PADDING} <: LayoutBase{T} end
+
+@inline function layout_size(::Type{PaddedAlignedColMajor{T, PADDING}}, logical_size::NamedTuple) where {T, PADDING}
+    t = Tuple(logical_size)
+    return (Base.first(t) + PADDING, Base.tail(t)...)
+end
+
+@inline function layout_load(::Type{PaddedAlignedColMajor{T, PADDING}}, workspace, tile::Tile, logical_size::NamedTuple) where {T, PADDING}
+    N = 16 ÷ sizeof(T)
+    ptr = pointer(workspace, linearise(tile.base, logical_size))
+    return vloada(Vec{N, T}, ptr, linearise(tile.offset, logical_size))
+end
+
+@inline function layout_store!(::Type{PaddedAlignedColMajor{T, PADDING}}, workspace, value, tile::Tile, logical_size::NamedTuple) where {T, PADDING}
+    t = Tuple(logical_size)
+    padded_logical_size = typeof(logical_size)((Base.first(t) + PADDING, Base.tail(t)...))
+
+    N = 16 ÷ sizeof(T)
+    ptr = pointer(workspace, linearise(tile.base, padded_logical_size))
+    return vstorea!(Vec{N, T}, ptr, value, linearise(tile.offset, padded_logical_size))
+end
+
+end
+
 end
