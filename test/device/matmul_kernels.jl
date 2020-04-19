@@ -18,7 +18,12 @@ using CUDAnative.MatMul
             c   = CuArray(c_h)
             d   = similar(c)
 
-            conf = MatMul.get_config(gemm_shape = (M = M, N = N, K = K))
+            conf = MatMul.get_config(
+                gemm_shape = (M = M, N = N, K = K),
+                operator = Operator.WMMAOp{16, 16, 16},
+                global_a_layout = Layout.AlignedColMajor{Float16},
+                global_c_layout = Layout.AlignedColMajor{Float32}
+                                    )
 
             MatMul.matmul(a, b, c, d, conf)
 
@@ -41,7 +46,12 @@ using CUDAnative.MatMul
             c   = CuArray(c_h)
             d   = similar(c)
 
-            conf = MatMul.get_config(gemm_shape = (M = M, N = N, K = K))
+            conf = MatMul.get_config(
+                gemm_shape = (M = M, N = N, K = K),
+                operator = Operator.WMMAOp{16, 16, 16},
+                global_a_layout = Layout.AlignedColMajor{Float16},
+                global_c_layout = Layout.AlignedColMajor{Float32}
+                                    )
 
             MatMul.matmul(a, b, c, d, conf;
                           transform_shared_to_regs_c = Transform.Elementwise(x -> x * alpha))
