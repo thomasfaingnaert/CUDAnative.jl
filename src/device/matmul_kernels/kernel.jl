@@ -6,9 +6,6 @@ using CUDAnative.MatMul
 using GPUifyLoops: @unroll
 using StaticArrays
 
-using CUDAnative.MatMul.Operator
-using CUDAnative.MatMul.Transform
-
 function matmul_impl(a, b, c, d,
                      transf_gl2sh_a, transf_gl2sh_b, transf_gl2sh_c, transf_sh2gl_d,
                      transf_sh2rf_a, transf_sh2rf_b, transf_sh2rf_c, transf_rf2sh_d,
@@ -44,12 +41,12 @@ function matmul_impl(a, b, c, d,
     # (2) Load a COMPUTE_WARP.M x COMPUTE_WARP.N tile of C from shared memory into registers
     warp_tile = subdivide(block_tile.MN, (M = COMPUTE_WARP.M, N = COMPUTE_WARP.N), warpId, WARPS_PER_BLOCK)
 
-    c_frags = MArray{Tuple{NUM_FRAGMENTS_M, NUM_FRAGMENTS_N}, op_fragtype_accum(OPERATOR, SHARED_C_LAYOUT)}(undef)
+    c_frags = MArray{Tuple{NUM_FRAGMENTS_M, NUM_FRAGMENTS_N}, Operator.fragtype_accum(OPERATOR, SHARED_C_LAYOUT)}(undef)
 
     @unroll for i = 1 : NUM_FRAGMENTS_M
         @unroll for j = 1 : NUM_FRAGMENTS_N
             tile = translate(warp_tile, (M = (i-1)*COMPUTE_OP_SHAPE.M, N = (j-1)*COMPUTE_OP_SHAPE.N))
-            @inbounds c_frags[i, j] = transf_sh2rf_c(op_load_c(OPERATOR, SHARED_C_LAYOUT, shmem_c, tile, block_tile.MN.size), tile)
+            @inbounds c_frags[i, j] = transf_sh2rf_c(Operator.load_c(OPERATOR, SHARED_C_LAYOUT, shmem_c, tile, block_tile.MN.size), tile)
         end
     end
 
@@ -84,25 +81,25 @@ function matmul_impl(a, b, c, d,
         # (3.3) Calculate a COMPUTE_WARP.M x COMPUTE_WARP.N tile of D, using a COMPUTE_WARP.M x COMPUTE_WARP.N x COMPUTE_WARP.K operation
         @unroll for warp_tile = parallellise(block_tile, COMPUTE_WARP, warpId, WARPS_PER_BLOCK)
             # (3.3.1) Load a COMPUTE_WARP.M x COMPUTE_WARP.K tile of A from shared memory into registers
-            a_frags = MArray{Tuple{NUM_FRAGMENTS_M}, op_fragtype_a(OPERATOR, SHARED_A_LAYOUT)}(undef)
+            a_frags = MArray{Tuple{NUM_FRAGMENTS_M}, Operator.fragtype_a(OPERATOR, SHARED_A_LAYOUT)}(undef)
 
             @unroll for i = 1 : NUM_FRAGMENTS_M
                 a_tile = translate(warp_tile.MK, (M = (i-1)*COMPUTE_OP_SHAPE.M, K = 0))
-                @inbounds a_frags[i] = transf_sh2rf_a(op_load_a(OPERATOR, SHARED_A_LAYOUT, shmem_a, a_tile, block_tile.MK.size), a_tile)
+                @inbounds a_frags[i] = transf_sh2rf_a(Operator.load_a(OPERATOR, SHARED_A_LAYOUT, shmem_a, a_tile, block_tile.MK.size), a_tile)
             end
 
             # (3.3.2) Load a COMPUTE_WARP.K x COMPUTE_WARP.N tile of B from shared memory into registers
-            b_frags = MArray{Tuple{NUM_FRAGMENTS_N}, op_fragtype_b(OPERATOR, SHARED_B_LAYOUT)}(undef)
+            b_frags = MArray{Tuple{NUM_FRAGMENTS_N}, Operator.fragtype_b(OPERATOR, SHARED_B_LAYOUT)}(undef)
 
             @unroll for j = 1 : NUM_FRAGMENTS_N
                 b_tile = translate(warp_tile.KN, (K = 0, N = (j-1)*COMPUTE_OP_SHAPE.N))
-                @inbounds b_frags[j] = transf_sh2rf_b(op_load_b(OPERATOR, SHARED_B_LAYOUT, shmem_b, b_tile, block_tile.KN.size), b_tile)
+                @inbounds b_frags[j] = transf_sh2rf_b(Operator.load_b(OPERATOR, SHARED_B_LAYOUT, shmem_b, b_tile, block_tile.KN.size), b_tile)
             end
 
             # (3.3.3) Compute a COMPUTE_WARP.M x COMPUTE_WARP.N x COMPUTE_WARP.K matrix product within one warp
             @unroll for i = 1 : NUM_FRAGMENTS_M
                 @unroll for j = 1 : NUM_FRAGMENTS_N
-                    @inbounds c_frags[i, j] = op_mma(OPERATOR, a_frags[i], b_frags[j], c_frags[i, j])
+                    @inbounds c_frags[i, j] = Operator.mma(OPERATOR, a_frags[i], b_frags[j], c_frags[i, j])
                 end
             end
         end
@@ -118,7 +115,7 @@ function matmul_impl(a, b, c, d,
     @unroll for i = 1 : NUM_FRAGMENTS_M
         @unroll for j = 1 : NUM_FRAGMENTS_N
             tile = translate(warp_tile, (M = (i-1)*COMPUTE_OP_SHAPE.M, N = (j-1)*COMPUTE_OP_SHAPE.N))
-            op_store_d(OPERATOR, SHARED_D_LAYOUT, shmem_d, transf_rf2sh_d(c_frags[i, j], tile), tile, block_tile.MN.size)
+            Operator.store_d(OPERATOR, SHARED_D_LAYOUT, shmem_d, transf_rf2sh_d(c_frags[i, j], tile), tile, block_tile.MN.size)
         end
     end
 

@@ -1,3 +1,4 @@
+export Transform
 module Transform
 
 # ---------------------

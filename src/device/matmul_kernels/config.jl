@@ -55,7 +55,7 @@ function get_config(; gemm_shape, kwargs...)
         get(params, :mem_cd_warp, (M = 128, N = 1)),
         get(params, :mem_cd_thread, (M = 4, N = 1)),
         get(params, :compute_warp, (M = 32, N = 64, K = 16)),
-        Operator.op_shape(get(params, :operator, Operator.WMMAOp{16, 16, 16})),
+        Operator.shape(get(params, :operator, Operator.WMMAOp{16, 16, 16})),
 
         #= Layouts =#
         get(params, :global_a_layout, Layout.AlignedColMajor{Float16}),
