@@ -67,7 +67,8 @@ include("device/pointer.jl")
 include("device/array.jl")
 include("device/cuda.jl")
 include("device/llvm.jl")
-include("device/gemm_kernels.jl")
+include("device/tiling.jl")
+include("device/matmul_kernels.jl")
 
 using GPUCompiler
 include("device/runtime.jl")
