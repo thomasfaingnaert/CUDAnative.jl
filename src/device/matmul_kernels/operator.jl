@@ -1,7 +1,7 @@
 module Operator
 
 using CUDAnative: WMMA
-using CUDAnative.Tiling: Tile, linearise
+using CUDAnative.Tiling
 using CUDAnative.MatMul.Layout: Padded, AlignedColMajor, pad_logical_coord
 
 export op_shape

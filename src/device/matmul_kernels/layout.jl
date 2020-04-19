@@ -1,7 +1,7 @@
 module Layout
 
-using CUDAnative: Vec, vloada, vstorea!
-using CUDAnative.Tiling: Tile, linearise
+using CUDAnative
+using CUDAnative.Tiling
 
 # -----------
 # Layout base
