@@ -4,24 +4,24 @@ module Transform
 # Elementwise transform
 # ---------------------
 
-export ElementwiseTransform
+export Elementwise
 
 """
-    ElementwiseTransform{F}
+    Elementwise{F}
 
 A simple transformation that applies a function elementwise.
 
 # Example
 ```julia
-double_elements = ElementwiseTransform(x -> x * 2)
+double_elements = Elementwise(x -> x * 2)
 ```
 """
-struct ElementwiseTransform{F}
+struct Elementwise{F}
     func::F
 end
 
-@inline ElementwiseTransform() = ElementwiseTransform(identity)
+@inline Elementwise() = Elementwise(identity)
 
-@inline (transf::ElementwiseTransform)(x, tile) = transf.func.(x)
+@inline (transf::Elementwise)(x, tile) = transf.func.(x)
 
 end

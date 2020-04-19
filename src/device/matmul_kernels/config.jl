@@ -55,20 +55,20 @@ function get_config(; gemm_shape, kwargs...)
         get(params, :mem_cd_warp, (M = 128, N = 1)),
         get(params, :mem_cd_thread, (M = 4, N = 1)),
         get(params, :compute_warp, (M = 32, N = 64, K = 16)),
-        op_shape(get(params, :operator, WMMAOp{16, 16, 16})),
+        Operator.op_shape(get(params, :operator, Operator.WMMAOp{16, 16, 16})),
 
         #= Layouts =#
-        get(params, :global_a_layout, AlignedColMajor{Float16}),
-        get(params, :global_b_layout, AlignedColMajor{Float16}),
-        get(params, :global_c_layout, AlignedColMajor{Float32}),
-        get(params, :global_d_layout, AlignedColMajor{Float32}),
+        get(params, :global_a_layout, Layout.AlignedColMajor{Float16}),
+        get(params, :global_b_layout, Layout.AlignedColMajor{Float16}),
+        get(params, :global_c_layout, Layout.AlignedColMajor{Float32}),
+        get(params, :global_d_layout, Layout.AlignedColMajor{Float32}),
 
-        get(params, :shared_a_layout, Padded{AlignedColMajor{Float16}, 8}),
-        get(params, :shared_b_layout, Padded{AlignedColMajor{Float16}, 8}),
-        get(params, :shared_c_layout, AlignedColMajor{Float32}),
-        get(params, :shared_d_layout, AlignedColMajor{Float32}),
+        get(params, :shared_a_layout, Layout.Padded{Layout.AlignedColMajor{Float16}, 8}),
+        get(params, :shared_b_layout, Layout.Padded{Layout.AlignedColMajor{Float16}, 8}),
+        get(params, :shared_c_layout, Layout.AlignedColMajor{Float32}),
+        get(params, :shared_d_layout, Layout.AlignedColMajor{Float32}),
 
         #= Operators =#
-        get(params, :operator, WMMAOp{16, 16, 16}),
+        get(params, :operator, Operator.WMMAOp{16, 16, 16}),
     }
 end
