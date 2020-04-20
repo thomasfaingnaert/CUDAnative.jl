@@ -17,6 +17,7 @@ end
 
 plot_results("cudanative.csv", "CUDAnative")
 plot_results("cublas.csv", "cuBLAS")
+plot_results("cutlass-wmma.csv", "CUTLASS (WMMA)")
 
 title!("Performance of mixed-precision GEMM\nProblem size: N x N x N")
 xlabel!("N")
