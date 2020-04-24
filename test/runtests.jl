@@ -35,7 +35,7 @@ capability(device()) >= v"2.0" || error("The CUDAnative.jl test suite requires a
 #= include("device/cuda.jl") =#
 #= include("device/wmma.jl") =#
 include("device/tiling.jl")
-#= include("device/matmul_kernels.jl") =#
+include("device/matmul_kernels.jl")
 
 #= include("nvtx.jl") =#
 

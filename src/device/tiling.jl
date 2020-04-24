@@ -69,7 +69,7 @@ Creates a new [`Tile`](@ref) of the given `size`, with zero `base` and
 CUDAnative.Tiling.Tile((M = 24, N = 16, K = 4))
 ```
 """
-Tile(size::NamedTuple{names, T}) where {names, T} = Tile{size, names, T}(map(x -> 0, size), map(x -> 0, size))
+@inline Tile(size::NamedTuple{names, T}) where {names, T} = Tile{size, names, T}(map(x -> 0, size), map(x -> 0, size))
 
 @inline projection_impl(base::NamedTuple{names, T}, offset::NamedTuple{names, T}, size::NamedTuple{names, T}) where {names, T} = Tile{size, names, T}(base, offset)
 
