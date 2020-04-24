@@ -128,6 +128,8 @@ Translate (i.e. move) a [`Tile`](@ref) by a constant `offset`.
     return Tile{size, names, T}(base, tile.offset)
 end
 
+@inline translate(tile::Tile{size, names, T}, offset::Tuple) where {names, T, size} = translate(tile, NamedTuple{names}(offset))
+
 # -------------
 # TileIterators
 # -------------

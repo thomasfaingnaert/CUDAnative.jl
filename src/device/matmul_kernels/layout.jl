@@ -3,6 +3,8 @@ module Layout
 
 using CUDAnative
 using CUDAnative.Tiling
+using GPUifyLoops
+using StaticArrays
 
 # -----------
 # Layout base
@@ -35,16 +37,28 @@ end
 
 struct AlignedColMajor{T} <: LayoutBase{T} end
 
-@inline function load(::Type{AlignedColMajor{T}}, workspace, tile::Tile, logical_size::NamedTuple) where {T}
-    N = 16 ÷ sizeof(T)
-    ptr = pointer(workspace, linearise(tile.base, logical_size))
-    return vloada(Vec{N, T}, ptr, linearise(tile.offset, logical_size))
+# TODO: readd vectorisation
+@inline function load(::Type{AlignedColMajor{T}}, workspace, tile::Tile{size}, logical_size::NamedTuple) where {T, size}
+    res = MArray{Tuple{size[1], size[2]}, T}(undef)
+
+    @unroll for j = 1 : size[2]
+        @unroll for i = 1 : size[1]
+            t = translate(tile, (i - 1, j - 1))
+            @inbounds res[i, j] = workspace[linearise(t.index, logical_size)]
+        end
+    end
+
+    return res
 end
 
-@inline function store!(::Type{AlignedColMajor{T}}, workspace, value, tile::Tile, logical_size::NamedTuple) where {T}
-    N = 16 ÷ sizeof(T)
-    ptr = pointer(workspace, linearise(tile.base, logical_size))
-    return vstorea!(Vec{N, T}, ptr, value, linearise(tile.offset, logical_size))
+# TODO: remove logical_size?
+@inline function store!(::Type{AlignedColMajor{T}}, workspace, value, tile::Tile{size}, logical_size::NamedTuple) where {T, size}
+    @unroll for j = 1 : size[2]
+        @unroll for i = 1 : size[1]
+            t = translate(tile, (i - 1, j - 1))
+            @inbounds workspace[linearise(t.index, logical_size)] = value[i, j]
+        end
+    end
 end
 
 end
