@@ -37,48 +37,18 @@ end
 
 struct AlignedColMajor{T} <: LayoutBase{T} end
 
-# Helper function to determine alignment from offset
-@inline function get_alignment(base_alignment, offset)
-    rem = offset % base_alignment
-
-    if rem == 0
-        return base_alignment # same alignment as base
-    elseif rem & (rem - 1) == 0
-        return rem            # partially aligned
-    else
-        return 1              # not aligned
-    end
-end
-
 # TODO: cleanup vectorisation
-
-@inline function load(::Type{AlignedColMajor{Float16}}, workspace, tile::Tile{size}, logical_size::NamedTuple) where {size}
-    res = MArray{Tuple{size[1], size[2]}, Float16}(undef)
+@inline function load(::Type{AlignedColMajor{T}}, workspace, tile::Tile{size}, logical_size::NamedTuple) where {T, size}
+    vec_len = 16 ÷ sizeof(T)
+    N = (sizeof(T) * vec_len) ÷ sizeof(Float32)
+    res = MArray{Tuple{size[1] ÷ vec_len, size[2]}, NTuple{N, VecElement{Float32}}}(undef)
 
     @unroll for j = 1 : size[2]
-        @unroll for i = 1 : size[1]
+        @unroll for i = 1 : vec_len : size[1]
             t = translate(tile, (i - 1, j - 1))
             ind = Tuple(t.index) .+ 1
             @inbounds linear_index = LinearIndices(Base.size(workspace))[ind...]
-            @inbounds res[i, j] = workspace[linear_index]
-        end
-    end
-
-    return res
-end
-
-@inline function load(::Type{AlignedColMajor{Float32}}, workspace, tile::Tile{size}, logical_size::NamedTuple) where {size}
-    res = MArray{Tuple{size[1], size[2]}, Float32}(undef)
-
-    @unroll for j = 1 : size[2]
-        @unroll for i = 1 : size[1]
-            t = translate(tile, (i - 1, j - 1))
-            ind = Tuple(t.index) .+ 1
-            @inbounds linear_index = LinearIndices(Base.size(workspace))[ind...]
-
-            #= align = Val(get_alignment(16 ÷ sizeof(T), i-1)) =#
-            #= @inbounds res[i, j] = unsafe_load(pointer(workspace), linear_index) =#
-            @inbounds res[i, j] = workspace[linear_index]
+            @inbounds res[i, j] = vloada(Vec{vec_len, T}, pointer(workspace), linear_index)
         end
     end
 
@@ -87,11 +57,14 @@ end
 
 # TODO: remove logical_size?
 @inline function store!(::Type{AlignedColMajor{T}}, workspace, value, tile::Tile{size}, logical_size::NamedTuple) where {T, size}
+    vec_len = 16 ÷ sizeof(T)
+
     @unroll for j = 1 : size[2]
-        @unroll for i = 1 : size[1]
+        @unroll for i = 1 : vec_len : size[1]
             t = translate(tile, (i - 1, j - 1))
             ind = Tuple(t.index) .+ 1
-            @inbounds workspace[ind...] = value[i, j]
+            @inbounds linear_index = LinearIndices(Base.size(workspace))[ind...]
+            vstorea!(Vec{vec_len, T}, pointer(workspace), value[i, j], linear_index)
         end
     end
 end
