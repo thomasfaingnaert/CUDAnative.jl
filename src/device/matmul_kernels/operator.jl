@@ -36,26 +36,34 @@ struct WMMAOp{M, N, K} end
 
 function load_a(::Type{WMMAOp{M, N, K}}, ::Type{Layout.AlignedColMajor{Float16}}, workspace, tile::Tile, logical_size::NamedTuple) where {M, N, K}
     conf = WMMA.Config{M, N, K, Float32}
-    ptr = pointer(workspace, linearise(tile.index, logical_size))
-    return WMMA.load_a(ptr, logical_size.M, WMMA.ColMajor, conf)
+    ind = Tuple(tile.index) .+ 1
+    @inbounds linear_index = LinearIndices(size(workspace))[ind...]
+    ptr = pointer(workspace, linear_index)
+    return WMMA.load_a(ptr, size(workspace, 1), WMMA.ColMajor, conf)
 end
 
 function load_b(::Type{WMMAOp{M, N, K}}, ::Type{Layout.AlignedColMajor{Float16}}, workspace, tile::Tile, logical_size::NamedTuple) where {M, N, K}
     conf = WMMA.Config{M, N, K, Float32}
-    ptr = pointer(workspace, linearise(tile.index, logical_size))
-    return WMMA.load_b(ptr, logical_size.K, WMMA.ColMajor, conf)
+    ind = Tuple(tile.index) .+ 1
+    @inbounds linear_index = LinearIndices(size(workspace))[ind...]
+    ptr = pointer(workspace, linear_index)
+    return WMMA.load_b(ptr, size(workspace, 1), WMMA.ColMajor, conf)
 end
 
 function load_c(::Type{WMMAOp{M, N, K}}, ::Type{Layout.AlignedColMajor{Float32}}, workspace, tile::Tile, logical_size::NamedTuple) where {M, N, K}
     conf = WMMA.Config{M, N, K, Float32}
-    ptr = pointer(workspace, linearise(tile.index, logical_size))
-    return WMMA.load_c(ptr, logical_size.M, WMMA.ColMajor, conf)
+    ind = Tuple(tile.index) .+ 1
+    @inbounds linear_index = LinearIndices(size(workspace))[ind...]
+    ptr = pointer(workspace, linear_index)
+    return WMMA.load_c(ptr, size(workspace, 1), WMMA.ColMajor, conf)
 end
 
 function store_d(::Type{WMMAOp{M, N, K}}, ::Type{Layout.AlignedColMajor{Float32}}, workspace, frag, tile::Tile, logical_size::NamedTuple) where {M, N, K}
     conf = WMMA.Config{M, N, K, Float32}
-    ptr = pointer(workspace, linearise(tile.index, logical_size))
-    WMMA.store_d(ptr, frag, logical_size.M, WMMA.ColMajor, conf)
+    ind = Tuple(tile.index) .+ 1
+    @inbounds linear_index = LinearIndices(size(workspace))[ind...]
+    ptr = pointer(workspace, linear_index)
+    WMMA.store_d(ptr, frag, size(workspace, 1), WMMA.ColMajor, conf)
 end
 
 function mma(::Type{WMMAOp{M, N, K}}, a_frag, b_frag, c_frag) where {M, N, K}
