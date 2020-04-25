@@ -28,8 +28,8 @@ end
 
 @inline eltype(::Type{Padded{L, P}}) where {L, P} = eltype(L)
 @inline size(::Type{Padded{L, P}}, logical_size::NamedTuple) where {L, P} = size(L, pad_logical_coord(Padded{L, P}, logical_size))
-@inline load(::Type{Padded{L, P}}, workspace, tile::Tile, logical_size::NamedTuple) where {L, P} = load(L, workspace, tile, pad_logical_coord(Padded{L, P}, logical_size))
-@inline store!(::Type{Padded{L, P}}, workspace, value, tile::Tile, logical_size::NamedTuple) where {L, P} = store!(L, workspace, value, tile::Tile, pad_logical_coord(Padded{L, P}, logical_size))
+@inline load(::Type{Padded{L, P}}, workspace, tile::Tile, logical_size::NamedTuple) where {L, P} = load(L, workspace, tile)
+@inline store!(::Type{Padded{L, P}}, workspace, value, tile::Tile) where {L, P} = store!(L, workspace, value, tile::Tile)
 
 # ---------------
 # AlignedColMajor
@@ -38,7 +38,7 @@ end
 struct AlignedColMajor{T} <: LayoutBase{T} end
 
 # TODO: cleanup vectorisation
-@inline function load(::Type{AlignedColMajor{T}}, workspace, tile::Tile{size}, logical_size::NamedTuple) where {T, size}
+@inline function load(::Type{AlignedColMajor{T}}, workspace, tile::Tile{size}) where {T, size}
     vec_len = 16 ÷ sizeof(T)
     N = (sizeof(T) * vec_len) ÷ sizeof(Float32)
     res = MArray{Tuple{size[1] ÷ vec_len, size[2]}, NTuple{N, VecElement{Float32}}}(undef)
@@ -55,8 +55,7 @@ struct AlignedColMajor{T} <: LayoutBase{T} end
     return res
 end
 
-# TODO: remove logical_size?
-@inline function store!(::Type{AlignedColMajor{T}}, workspace, value, tile::Tile{size}, logical_size::NamedTuple) where {T, size}
+@inline function store!(::Type{AlignedColMajor{T}}, workspace, value, tile::Tile{size}) where {T, size}
     vec_len = 16 ÷ sizeof(T)
 
     @unroll for j = 1 : size[2]
